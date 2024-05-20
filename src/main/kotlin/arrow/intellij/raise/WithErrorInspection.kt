@@ -78,7 +78,7 @@ class WithErrorInspection: AbstractKotlinInspection() {
             holder.registerProblem(
                 expression,
                 "Missing Raise context with error type '$errorType'",
-                ProblemHighlightType.POSSIBLE_PROBLEM,
+                ProblemHighlightType.GENERIC_ERROR,
                 AddWithError()
             )
         }
