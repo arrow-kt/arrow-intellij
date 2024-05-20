@@ -8,15 +8,21 @@ This is a list of implemented and planned inspections.
 When possible, the plug-in also offers a fix for the problem.
 
 _Related to `Raise`_:
-- [X] Missing `bind` and `bindAll`
-- [X] Different contexts, and missing `withError`
-- [X] Idiomatic usage of `ensure` and `ensureNotNull`
+- Missing `bind` and `bindAll`
+- Different contexts, and missing `withError`
+- Idiomatic usage of `ensure` and `ensureNotNull`
 
 _Potentially wrong usages_:
 
-- [X] Potentially wrong escape of `Raise` context
-- [X] Incorrect usage of `Atomic` with primitive types
-- [ ] Matching on `Eval` instances directly
+- Potentially wrong escape of `Raise` context
+- Incorrect usage of `Atomic` with primitive types
+- Matching on `Eval` values directly
+
+## Running the development version
+
+Open the project in IntelliJ, or run `./gradlew runIde` from the command line.
+
+On the first run, an entire IntelliJ IDEA is downloaded, so it can take quite some time.
 
 ## License
 
