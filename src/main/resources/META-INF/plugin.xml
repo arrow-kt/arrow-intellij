@@ -51,5 +51,12 @@
                 displayName="Idiomatic usage of 'ensure'"
                 groupName="Arrow"
                 implementationClass="arrow.intellij.raise.EnsureInspection"/>
+        <localInspection
+                language="kotlin"
+                enabledByDefault="true"
+                level="WARNING"
+                displayName="Atomic references with primitive types"
+                groupName="Arrow"
+                implementationClass="arrow.intellij.wrong.AtomicPrimitiveInspection"/>
     </extensions>
 </idea-plugin>

@@ -32,7 +32,7 @@ class EnsureInspection: AbstractKotlinInspection() {
             if (expression.condition == null) return@visitor
             val singleThenExpression = expression.then?.singleBlockExpression() ?: return@visitor
             // we should be in Raise context
-            val context = expression.analyze(BodyResolveMode.PARTIAL)
+            val context = expression.analyze(BodyResolveMode.FULL)
             val resolver = expression.getResolutionFacade()
             if (!expression.inRaiseContext(context, resolver)) return@visitor
             // check that we have a 'raise'

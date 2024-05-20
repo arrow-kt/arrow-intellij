@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 class WithErrorInspection: AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         expressionVisitor visitor@{ expr ->
-            val context = expr.analyze(BodyResolveMode.PARTIAL)
+            val context = expr.analyze(BodyResolveMode.FULL)
             val resolver = expr.getResolutionFacade()
             // we should be in Raise context
             val raiseContexts = expr.raiseContexts(context, resolver).toList()

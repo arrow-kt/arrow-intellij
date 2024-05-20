@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.types.KotlinType
 class BindInspection: AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         expressionVisitor visitor@{ expr ->
-            val context = expr.analyze(BodyResolveMode.PARTIAL)
+            val context = expr.analyze(BodyResolveMode.FULL)
             val resolver = expr.getResolutionFacade()
             // we should be in Raise context
             if (!expr.inRaiseContext(context, resolver)) return@visitor

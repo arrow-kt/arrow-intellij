@@ -1,4 +1,4 @@
-# Arrow IntelliJ plug-in
+# Arrow plug-in for IntelliJ-based IDEs
 
 Different helpers related to [Arrow](https://arrow-kt.io/) libraries.
 
@@ -15,7 +15,7 @@ _Related to `Raise`_:
 _Potentially wrong usages_:
 
 - [X] Potentially wrong escape of `Raise` context
-- [ ] Incorrect usage of `Atomic` with primitive types
+- [X] Incorrect usage of `Atomic` with primitive types
 - [ ] Matching on `Eval` instances directly
 
 ## License
