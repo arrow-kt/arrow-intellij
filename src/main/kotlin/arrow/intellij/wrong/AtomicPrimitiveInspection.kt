@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.idea.base.psi.imports.addImport
+import org.jetbrains.kotlin.idea.base.utils.fqname.fqName
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.js.descriptorUtils.nameIfStandardType
@@ -19,17 +20,18 @@ import org.jetbrains.kotlin.psi.expressionVisitor
 import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.util.getType
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
+import org.jetbrains.kotlin.types.AbbreviatedType
 
 class AtomicPrimitiveInspection: AbstractKotlinInspection() {
-    val ATOMIC_TYPES = listOf("java.util.concurrent.atomic.AtomicReference", "arrow.atomic.Atomic")
     val PRIMITIVE_WITH_ATOMIC = listOf("kotlin.Boolean", "kotlin.Int", "kotlin.Float")
 
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         expressionVisitor visitor@{ expression ->
             val context = expression.analyze(BodyResolveMode.FULL)
             val expressionType = expression.getType(context)
-            if (expressionType?.fqNameString !in ATOMIC_TYPES) return@visitor
-            val innerType = expressionType?.arguments?.firstOrNull()?.type ?: return@visitor
+            val abbreviatedTypeName = (expressionType as? AbbreviatedType)?.fqName?.asString()
+            if (abbreviatedTypeName != "arrow.atomic.Atomic" && expressionType?.fqNameString != "arrow.atomic.Atomic") return@visitor
+            val innerType = expressionType.arguments.firstOrNull()?.type ?: return@visitor
             if (innerType.fqNameString in PRIMITIVE_WITH_ATOMIC) {
                 val call = expression.getResolvedCall(context)
                 val isConstructor = call?.resultingDescriptor is ConstructorDescriptor
