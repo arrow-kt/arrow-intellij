@@ -43,7 +43,7 @@ class EscapedRaiseInspection: AbstractKotlinInspection() {
             val hasProblems = potentiallyCaptured.any { (param, _) ->
                 when {
                     param.hasRaiseContext -> false
-                    param in callsInPlaceVariables -> false
+                    param !in callsInPlaceVariables -> false
                     else -> true
                 }
             }
