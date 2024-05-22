@@ -58,6 +58,11 @@ fun KtExpression.findArgumentToRaise(
 val CallableDescriptor.fqNameString: String?
     get() = fqNameOrNull()?.asString()
 
+val CallableDescriptor.hasRaiseContext: Boolean
+    get() = this.extensionReceiverParameter?.type?.isRaise == true
+            || this.dispatchReceiverParameter?.type?.isRaise == true
+            || this.contextReceiverParameters.any { it.type.isRaise }
+
 val KotlinType.fqNameString: String?
     get() = toClassDescriptor?.fqNameOrNull()?.asString()
 
