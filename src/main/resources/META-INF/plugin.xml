@@ -65,5 +65,12 @@
                 displayName="Atomic references with primitive types"
                 groupName="Arrow"
                 implementationClass="arrow.intellij.wrong.WhenOnEvalInspection"/>
+        <localInspection
+                language="kotlin"
+                enabledByDefault="true"
+                level="WARNING"
+                displayName="Missing Arrow serializer"
+                groupName="Arrow"
+                implementationClass="arrow.intellij.fix.MissingSerializer"/>
     </extensions>
 </idea-plugin>

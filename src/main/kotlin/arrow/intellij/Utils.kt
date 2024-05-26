@@ -1,13 +1,16 @@
 package arrow.intellij
 
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.idea.base.psi.imports.addImport
 import org.jetbrains.kotlin.idea.intentions.branchedTransformations.isNullExpression
 import org.jetbrains.kotlin.idea.resolve.ResolutionFacade
 import org.jetbrains.kotlin.idea.util.getResolutionScope
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
@@ -72,6 +75,7 @@ val KotlinType.isRaise: Boolean
 val BINDABLE_TYPES = setOf(
     "arrow.core.Either",
     "arrow.core.Validated",
+    "arrow.core.Ior",
     "arrow.core.Option",
     "arrow.core.Effect",
     "arrow.core.EagerEffect",
@@ -89,3 +93,20 @@ val KotlinType.iterableElement: KotlinType?
     get() = supertypes()
         .firstOrNull { it.fqNameString == "kotlin.collections.Iterable" }
         ?.arguments?.first()?.type
+
+val SERIALIZABLE_TYPES = setOf(
+    "arrow.core.Either",
+    "arrow.core.Validated",
+    "arrow.core.Ior",
+    "arrow.core.Option",
+    "arrow.core.NonEmptyList",
+    "arrow.core.NonEmptySet",
+)
+
+val KotlinType.isArrowSerializable: Boolean
+    get() = fqNameString in SERIALIZABLE_TYPES
+
+fun KtFile.addImportIfMissing(fqName: String) {
+    if (importDirectives.any { it.importedFqName?.asString() == fqName }) return
+    addImport(FqName(fqName))
+}

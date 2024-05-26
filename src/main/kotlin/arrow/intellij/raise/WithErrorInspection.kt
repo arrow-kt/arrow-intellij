@@ -1,6 +1,7 @@
 package arrow.intellij.raise
 
 import arrow.intellij.NonDuplicateProblemsHolder
+import arrow.intellij.addImportIfMissing
 import arrow.intellij.isBindable
 import arrow.intellij.isRaise
 import arrow.intellij.raiseContexts
@@ -11,7 +12,6 @@ import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
-import org.jetbrains.kotlin.idea.base.psi.imports.addImport
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
@@ -19,7 +19,6 @@ import org.jetbrains.kotlin.idea.codeinsight.utils.findExistingEditor
 import org.jetbrains.kotlin.idea.core.moveCaret
 import org.jetbrains.kotlin.idea.core.resolveCandidates
 import org.jetbrains.kotlin.idea.resolve.ResolutionFacade
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
@@ -91,7 +90,7 @@ class WithErrorInspection: AbstractKotlinInspection() {
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
             val element = descriptor.psiElement as? KtExpression ?: return
             val factory = KtPsiFactory(project)
-            element.containingKtFile.addImport(FqName("arrow.core.raise.withError"))
+            element.containingKtFile.addImportIfMissing("arrow.core.raise.withError")
             val elementToModify = when (val p = element.parent.parent) {
                 is KtDotQualifiedExpression -> p
                 else -> element.parent as KtExpression

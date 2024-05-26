@@ -1,5 +1,6 @@
 package arrow.intellij.raise
 
+import arrow.intellij.addImportIfMissing
 import arrow.intellij.findArgumentToRaise
 import arrow.intellij.findEqualsNull
 import arrow.intellij.inRaiseContext
@@ -10,13 +11,11 @@ import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
-import org.jetbrains.kotlin.idea.base.psi.imports.addImport
 import org.jetbrains.kotlin.idea.base.util.reformat
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.idea.intentions.negate
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtIfExpression
@@ -90,7 +89,7 @@ class EnsureInspection: AbstractKotlinInspection() {
         fun execute(project: Project, originalExpression: KtIfExpression, import: String, others: List<KtExpression>, newExpressionText: String) {
             val factory = KtPsiFactory(project)
             val parent = originalExpression.parent
-            originalExpression.containingKtFile.addImport(FqName(import))
+            originalExpression.containingKtFile.addImportIfMissing(import)
             for (other in others.reversed()) {
                 parent.addAfter(other, originalExpression)
                 val space = factory.createWhiteSpace("\n")

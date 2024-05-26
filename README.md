@@ -15,9 +15,13 @@ _Related to `Raise`_:
 
 _Potentially wrong usages_:
 
-- Potentially wrong escape of `Raise` context
+- Potential escape of `Raise` context
 - Incorrect usage of `Atomic` with primitive types
 - Matching on `Eval` values directly
+
+_General fixes_:
+
+- Missing serializer for an Arrow type
 
 ## Running the development version
 
