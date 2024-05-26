@@ -41,11 +41,7 @@ class EscapedRaiseInspection: AbstractKotlinInspection() {
             val callsInPlaceVariables = contracts.mapNotNull { (it as? CallsEffectDeclaration)?.variableReference?.descriptor }
             // ... and for which the parameter has no Raise, nor a callsInPlace
             val hasProblems = potentiallyCaptured.any { (param, _) ->
-                when {
-                    param.hasRaiseContext -> false
-                    param !in callsInPlaceVariables -> false
-                    else -> true
-                }
+                !param.hasRaiseContext && param !in callsInPlaceVariables
             }
             if (hasProblems) {
                 holder.registerProblem(

@@ -8,6 +8,7 @@ This is a list of implemented and planned inspections.
 When possible, the plug-in also offers a fix for the problem.
 
 _Related to `Raise`_:
+
 - Missing `bind` and `bindAll`
 - Different contexts, and missing `withError`
 - Idiomatic usage of `ensure` and `ensureNotNull`

@@ -67,9 +67,17 @@ val KotlinType.fqNameString: String?
     get() = toClassDescriptor?.fqNameOrNull()?.asString()
 
 val KotlinType.isRaise: Boolean
-    get() = fqNameString == "arrow.core.raise.Raise"
+    get() = fqNameString == "arrow.core.raise.Raise" || supertypes().any { it.isRaise }
 
-val BINDABLE_TYPES = setOf("arrow.core.Either", "arrow.core.Option", "kotlin.Result")
+val BINDABLE_TYPES = setOf(
+    "arrow.core.Either",
+    "arrow.core.Validated",
+    "arrow.core.Option",
+    "arrow.core.Effect",
+    "arrow.core.EagerEffect",
+    "kotlin.Result",
+    "app.cash.quiver.Outcome",
+)
 
 val KotlinType?.isBindable: Boolean
     get() = this != null && fqNameString in BINDABLE_TYPES
