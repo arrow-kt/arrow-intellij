@@ -1,3 +1,6 @@
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+import org.jetbrains.intellij.platform.gradle.models.ProductRelease
+
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "1.9.24"
@@ -18,13 +21,31 @@ dependencies {
     intellijPlatform {
         intellijIdeaCommunity("2023.3.6")
         instrumentationTools()
+        pluginVerifier()
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
     }
 }
 
+object Supported {
+    const val sinceBuild = "233"
+    const val untilBuild = "242.*"
+}
+
 intellijPlatform {
     buildSearchableOptions = false
+
+    verifyPlugin {
+        ides {
+            recommended()
+            select {
+                types = listOf(IntelliJPlatformType.IntellijIdeaCommunity)
+                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.EAP)
+                sinceBuild = Supported.sinceBuild
+                untilBuild = Supported.untilBuild
+            }
+        }
+    }
 }
 
 tasks {
@@ -38,17 +59,17 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("233")
-        untilBuild.set("242.*")
+        sinceBuild = Supported.sinceBuild
+        untilBuild = Supported.untilBuild
     }
 
     signPlugin {
-        certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
-        privateKey.set(System.getenv("SIGNING_KEY"))
-        password.set(System.getenv("SIGNING_KEY_PASSPHRASE"))
+        certificateChain = System.getenv("CERTIFICATE_CHAIN")
+        privateKey = System.getenv("SIGNING_KEY")
+        password = System.getenv("SIGNING_KEY_PASSPHRASE")
     }
 
     publishPlugin {
-        token.set(System.getenv("PUBLISH_TOKEN"))
+        token = System.getenv("PUBLISH_TOKEN")
     }
 }

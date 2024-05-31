@@ -11,7 +11,7 @@ import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
-import org.jetbrains.kotlin.idea.base.util.reformat
+import com.intellij.psi.codeStyle.CodeStyleManager
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
@@ -98,7 +98,7 @@ class EnsureInspection: AbstractKotlinInspection() {
             val newExpression = factory.createExpression(newExpressionText)
             originalExpression.replace(newExpression)
             if (others.isNotEmpty()) {
-                parent.reformat(true)
+                CodeStyleManager.getInstance(project).reformat(parent, true)
             }
         }
     }

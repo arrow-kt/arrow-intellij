@@ -72,5 +72,10 @@
                 displayName="Missing Arrow serializer"
                 groupName="Arrow"
                 implementationClass="arrow.intellij.fix.MissingSerializer"/>
+        <!-- recommended for the following libraries -->
+        <dependencySupport kind="java" coordinate="io.arrow-kt:arrow-atomic" />
+        <dependencySupport kind="java" coordinate="io.arrow-kt:arrow-core" />
+        <dependencySupport kind="java" coordinate="io.arrow-kt:arrow-core-high-arity" />
+        <dependencySupport kind="java" coordinate="io.arrow-kt:arrow-eval" />
     </extensions>
 </idea-plugin>
