@@ -27,50 +27,57 @@
                 language="kotlin"
                 enabledByDefault="true"
                 level="WARNING"
-                displayName="Missing 'bind' in 'Raise'"
-                groupName="Arrow"
+                bundle="messages.Arrow"
+                groupKey="arrow.group"
+                key="inspection.bind"
                 implementationClass="arrow.intellij.raise.BindInspection"/>
         <localInspection
                 language="kotlin"
                 enabledByDefault="true"
                 level="WARNING"
-                displayName="Different error type in 'Raise'"
-                groupName="Arrow"
+                bundle="messages.Arrow"
+                groupKey="arrow.group"
+                key="inspection.withError"
                 implementationClass="arrow.intellij.raise.WithErrorInspection"/>
         <localInspection
                 language="kotlin"
                 enabledByDefault="true"
                 level="WARNING"
-                displayName="Escaped 'Raise' contexts"
-                groupName="Arrow"
+                bundle="messages.Arrow"
+                groupKey="arrow.group"
+                key="inspection.escapedRaise"
                 implementationClass="arrow.intellij.raise.EscapedRaiseInspection"/>
         <localInspection
                 language="kotlin"
                 enabledByDefault="true"
                 level="WARNING"
-                displayName="Idiomatic usage of 'ensure'"
-                groupName="Arrow"
+                bundle="messages.Arrow"
+                groupKey="arrow.group"
+                key="inspection.ensure"
                 implementationClass="arrow.intellij.raise.EnsureInspection"/>
         <localInspection
                 language="kotlin"
                 enabledByDefault="true"
                 level="WARNING"
-                displayName="Atomic references with primitive types"
-                groupName="Arrow"
+                bundle="messages.Arrow"
+                groupKey="arrow.group"
+                key="inspection.atomicPrimitive"
                 implementationClass="arrow.intellij.wrong.AtomicPrimitiveInspection"/>
         <localInspection
                 language="kotlin"
                 enabledByDefault="true"
                 level="WARNING"
-                displayName="Atomic references with primitive types"
-                groupName="Arrow"
+                bundle="messages.Arrow"
+                groupKey="arrow.group"
+                key="inspection.whenOnEval"
                 implementationClass="arrow.intellij.wrong.WhenOnEvalInspection"/>
         <localInspection
                 language="kotlin"
                 enabledByDefault="true"
                 level="WARNING"
-                displayName="Missing Arrow serializer"
-                groupName="Arrow"
+                bundle="messages.Arrow"
+                groupKey="arrow.group"
+                key="inspection.serializer"
                 implementationClass="arrow.intellij.fix.MissingSerializer"/>
         <!-- recommended for the following libraries -->
         <dependencySupport kind="java" coordinate="io.arrow-kt:arrow-atomic" />
