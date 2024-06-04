@@ -2,6 +2,8 @@
 
 Different helpers related to [Arrow](https://arrow-kt.io/) libraries.
 
+<iframe width="245px" height="48px" src="https://plugins.jetbrains.com/embeddable/install/24550"></iframe>
+
 ## Inspections
 
 This is a list of implemented and planned inspections.
@@ -22,6 +24,8 @@ _Potentially wrong usages_:
 _General fixes_:
 
 - Missing serializer for an Arrow type
+
+![Video of bind](media/bind.mov)
 
 ## Running the development version
 

@@ -13,7 +13,17 @@
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
-    <description>Helpers for working with the Arrow libraries</description>
+    <description><![CDATA[
+<p>Different helpers related to <a href="https://arrow-kt.io/">Arrow</a> libraries</p>
+
+<p>
+<ul>
+<li>Fixes related to <tt>Raise</tt>: missing <tt>bind</tt>, different contexts, idiomatic usage of <tt>ensure</tt>;</li>
+<li>Missing serializers for Arrow Core types;</li>
+<li>Warn of potentially wrong usages: escaped <tt>Raise</tt>, atomic references with primitive types.
+</ul>
+</p>
+    ]]></description>
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
