@@ -13,6 +13,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
+import org.jetbrains.kotlin.diagnostics.DiagnosticWithParameters2
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
@@ -49,10 +50,21 @@ class BindInspection: AbstractKotlinInspection() {
         diagnostic: Diagnostic,
         holder: NonDuplicateProblemsHolder
     ) {
-        if (diagnostic.factoryName != "TYPE_MISMATCH") return
-        val expressionType = expression.getType(context)
-        val expectedType = context[BindingContext.EXPECTED_EXPRESSION_TYPE, expression]
-        checkActualExpected(expression, expressionType, expectedType, holder)
+        if (diagnostic.factoryName != "TYPE_MISMATCH" || diagnostic !is DiagnosticWithParameters2<*, *, *>) return
+        // check twice, as different options give better results
+        // since we use a NonDuplicateProblemsHolder, we get no duplicates
+        checkActualExpected(
+            expression,
+            expression.getType(context),
+            context[BindingContext.EXPECTED_EXPRESSION_TYPE, expression],
+            holder
+        )
+        checkActualExpected(
+            expression,
+            diagnostic.b as? KotlinType,
+            diagnostic.a as? KotlinType,
+            holder
+        )
     }
 
     private fun checkNoneApplicable(

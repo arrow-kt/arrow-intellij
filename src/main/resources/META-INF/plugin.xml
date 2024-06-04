@@ -8,7 +8,7 @@
     <name>Arrow</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor email="trupill@gmail.com" url="https://arrow-kt.io">Arrow Contributors</vendor>
+    <vendor email="arrow.kotlin@gmail.com" url="https://arrow-kt.io">Arrow Contributors</vendor>
 
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
