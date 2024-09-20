@@ -1,6 +1,7 @@
 package arrow.intellij.raise
 
 import arrow.intellij.NonDuplicateProblemsHolder
+import arrow.intellij.commonDiagnosticsFor
 import arrow.intellij.inRaiseContext
 import arrow.intellij.isBindable
 import arrow.intellij.isNotBindable
@@ -11,103 +12,93 @@ import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
-import org.jetbrains.kotlin.diagnostics.Diagnostic
-import org.jetbrains.kotlin.diagnostics.DiagnosticWithParameters2
-import org.jetbrains.kotlin.idea.caches.resolve.analyze
-import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
+import org.jetbrains.kotlin.analysis.api.fir.diagnostics.KaFirDiagnostic
+import org.jetbrains.kotlin.analysis.api.resolution.KaExplicitReceiverValue
+import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
+import org.jetbrains.kotlin.analysis.api.resolution.KaReceiverValue
+import org.jetbrains.kotlin.analysis.api.resolution.calls
+import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
-import org.jetbrains.kotlin.idea.core.resolveCandidates
-import org.jetbrains.kotlin.idea.resolve.ResolutionFacade
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.expressionVisitor
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.calls.util.getType
-import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
-import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
-import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
-import org.jetbrains.kotlin.types.KotlinType
 
 class BindInspection: AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         expressionVisitor visitor@{ expr ->
-            val context = expr.analyze(BodyResolveMode.FULL)
-            val resolver = expr.getResolutionFacade()
-            // we should be in Raise context
-            if (!expr.inRaiseContext(context, resolver)) return@visitor
-            // check depending on the diagnostic type
-            val ndHolder = NonDuplicateProblemsHolder(holder)
-            context.diagnostics.forElement(expr).forEach {
-                checkTypeMismatch(context, expr, it, ndHolder)
-                checkNoneApplicable(context, resolver, expr, it, ndHolder)
-            }
-        }
-
-    private fun checkTypeMismatch(
-        context: BindingContext,
-        expression: KtExpression,
-        diagnostic: Diagnostic,
-        holder: NonDuplicateProblemsHolder
-    ) {
-        if (diagnostic.factoryName != "TYPE_MISMATCH" || diagnostic !is DiagnosticWithParameters2<*, *, *>) return
-        // check twice, as different options give better results
-        // since we use a NonDuplicateProblemsHolder, we get no duplicates
-        checkActualExpected(
-            expression,
-            expression.getType(context),
-            context[BindingContext.EXPECTED_EXPRESSION_TYPE, expression],
-            holder
-        )
-        checkActualExpected(
-            expression,
-            diagnostic.b as? KotlinType,
-            diagnostic.a as? KotlinType,
-            holder
-        )
-    }
-
-    private fun checkNoneApplicable(
-        context: BindingContext,
-        resolver: ResolutionFacade,
-        expr: KtExpression,
-        diagnostic: Diagnostic,
-        holder: NonDuplicateProblemsHolder
-    ) {
-        if (!diagnostic.factoryName.startsWith("NONE_APPLICABLE")) return
-        val call = context[BindingContext.CALL, expr] ?: return
-        call.resolveCandidates(context, resolver, filterOutWrongReceiver = false).forEach { candidate ->
-            for (param in candidate.candidateDescriptor.valueParameters) {
-                val expectedType = param.type
-                for (argument in candidate.valueArguments[param]?.arguments.orEmpty()) {
-                    val argumentExpression = argument.getArgumentExpression() ?: continue
-                    val argumentType = argumentExpression.getType(context)
-                    checkActualExpected(argumentExpression, argumentType, expectedType, holder)
+            analyze(expr) {
+                // we should be in Raise context
+                if (!inRaiseContext(expr)) return@visitor
+                // check depending on the diagnostic type
+                val ndHolder = NonDuplicateProblemsHolder(holder)
+                commonDiagnosticsFor(expr).forEach {
+                    checkTypeMismatch(expr, it, ndHolder)
+                    checkNoneApplicable(expr, it, ndHolder)
                 }
             }
 
-            fun checkReceiver(
-                parameter: ReceiverParameterDescriptor?,
-                argument: ReceiverValue?
-            ) {
-                if (parameter == null) return
-                if (argument !is ExpressionReceiver) return
-                val expectedType = parameter.type
-                checkActualExpected(argument.expression, argument.type, expectedType, holder)
-            }
+        }
 
-            checkReceiver(candidate.candidateDescriptor.extensionReceiverParameter, candidate.extensionReceiver)
-            checkReceiver(candidate.candidateDescriptor.dispatchReceiverParameter, candidate.dispatchReceiver)
+    private fun KaSession.checkTypeMismatch(
+        expression: KtExpression,
+        diagnostic: KaDiagnosticWithPsi<*>,
+        holder: NonDuplicateProblemsHolder
+    ) {
+        if (diagnostic.factoryName != "TYPE_MISMATCH") return
+
+        // check twice, as different options give better results
+        // since we use a NonDuplicateProblemsHolder, we get no duplicates
+        checkActualExpected(expression, expression.expressionType, expression.expectedType, holder)
+        if (diagnostic is KaFirDiagnostic.TypeMismatch) // only works on FIR
+            checkActualExpected(expression, diagnostic.actualType, diagnostic.expectedType, holder)
+    }
+
+    private fun KaSession.checkNoneApplicable(
+        expr: KtExpression,
+        diagnostic: KaDiagnosticWithPsi<*>,
+        holder: NonDuplicateProblemsHolder
+    ) {
+        if (!diagnostic.factoryName.startsWith("NONE_APPLICABLE")) return
+
+        for (candidate in expr.resolveToCall()?.calls.orEmpty()) {
+            if (candidate is KaFunctionCall<*>) {
+                for ((expression, parameter) in candidate.argumentMapping) {
+                    checkArgument(expression, parameter.returnType, holder)
+                }
+                val pas = candidate.partiallyAppliedSymbol
+                pas.extensionReceiver?.let { checkArgument(it, holder) }
+                pas.dispatchReceiver?.let { checkArgument(it, holder) }
+            }
         }
     }
 
-    private fun checkActualExpected(
+    private fun KaSession.checkArgument(
         expression: KtExpression,
-        expressionType: KotlinType?,
-        expectedType: KotlinType?,
+        type: KaType,
         holder: NonDuplicateProblemsHolder
     ) {
-        if (expressionType.isBindable && expectedType.isNotBindable) {
+        checkActualExpected(expression, expression.expressionType, expression.expectedType, holder)
+        checkActualExpected(expression, expression.expressionType, type, holder)
+    }
+
+    private fun KaSession.checkArgument(
+        argument: KaReceiverValue,
+        holder: NonDuplicateProblemsHolder
+    ) {
+        if (argument !is KaExplicitReceiverValue) return
+        checkArgument(argument.expression, argument.type, holder)
+    }
+
+    private fun KaSession.checkActualExpected(
+        expression: KtExpression,
+        expressionType: KaType?,
+        expectedType: KaType?,
+        holder: NonDuplicateProblemsHolder
+    ) {
+        if (isBindable(expressionType) && isNotBindable(expectedType)) {
             holder.registerProblem(
                 expression,
                 "Potentially missing 'bind'",
@@ -116,7 +107,9 @@ class BindInspection: AbstractKotlinInspection() {
             )
         }
 
-       if (expressionType?.iterableElement.isBindable && expectedType?.iterableElement.isNotBindable) {
+        val iterableExpression = expressionType?.let { iterableElement(it) }
+        val iterableExpected = expectedType?.let { iterableElement(it) }
+        if (isBindable(iterableExpression) && isNotBindable(iterableExpected)) {
            holder.registerProblem(
                expression,
                "Potentially missing 'bindAll'",

@@ -1,41 +1,55 @@
 package arrow.intellij.wrong
 
-import arrow.intellij.fqNameString
+import arrow.intellij.isClassTypeFrom
 import com.intellij.codeInspection.LocalQuickFix
 import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
+import org.jetbrains.kotlin.analysis.api.resolution.successfulCallOrNull
+import org.jetbrains.kotlin.analysis.api.resolution.symbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaConstructorSymbol
+import org.jetbrains.kotlin.analysis.api.types.KaClassType
+import org.jetbrains.kotlin.analysis.api.types.KaFlexibleType
+import org.jetbrains.kotlin.analysis.api.types.KaType
+import org.jetbrains.kotlin.analysis.api.types.symbol
 import org.jetbrains.kotlin.idea.base.psi.imports.addImport
-import org.jetbrains.kotlin.idea.base.utils.fqname.fqName
-import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
-import org.jetbrains.kotlin.js.descriptorUtils.nameIfStandardType
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.expressionVisitor
-import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.util.getType
-import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
-import org.jetbrains.kotlin.types.AbbreviatedType
 
 class AtomicPrimitiveInspection: AbstractKotlinInspection() {
-    val PRIMITIVE_WITH_ATOMIC = listOf("kotlin.Boolean", "kotlin.Int", "kotlin.Float")
+    private val ATOMIC_CLASSES = setOf(
+        ClassId.fromString("arrow/atomic/Atomic"),
+        ClassId.fromString("java/util/concurrent/atomic/AtomicReference")
+    )
+
+    fun KaSession.isPrimitiveWithAtomic(type: KaType): Boolean =
+        type.isIntType || type.isBooleanType || type.isFloatType
 
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         expressionVisitor visitor@{ expression ->
-            val context = expression.analyze(BodyResolveMode.FULL)
-            val expressionType = expression.getType(context)
-            val abbreviatedTypeName = (expressionType as? AbbreviatedType)?.fqName?.asString()
-            if (abbreviatedTypeName != "arrow.atomic.Atomic" && expressionType?.fqNameString != "arrow.atomic.Atomic") return@visitor
-            val innerType = expressionType.arguments.firstOrNull()?.type ?: return@visitor
-            if (innerType.fqNameString in PRIMITIVE_WITH_ATOMIC) {
-                val call = expression.getResolvedCall(context)
-                val isConstructor = call?.resultingDescriptor is ConstructorDescriptor
-                val smallType = innerType.nameIfStandardType!!.asString()
+            analyze(expression) {
+                val expressionType = expression.expressionType ?: return@visitor
+                if (!isClassTypeFrom(expressionType, ATOMIC_CLASSES)) return@visitor
+                val innerType = (expressionType as? KaClassType)?.typeArguments?.firstOrNull()?.type ?: return@visitor
+                val notFlexibleInnerType = when (innerType) {
+                    is KaFlexibleType -> innerType.lowerBound
+                    else -> innerType
+                }
+                if (!isPrimitiveWithAtomic(notFlexibleInnerType)) return@visitor
+
+                val call = expression.resolveToCall()?.successfulCallOrNull<KaFunctionCall<*>>() ?: return@visitor
+                val isConstructor = call.symbol is KaConstructorSymbol
+
+                val smallType = notFlexibleInnerType.symbol?.name?.asString() ?: "??"
                 holder.registerProblem(
                     expression,
                     "Atomic reference used with primitive type '$smallType'",
@@ -50,12 +64,10 @@ class AtomicPrimitiveInspection: AbstractKotlinInspection() {
         override fun getFamilyName(): String = "Fixes related to Atomic"
 
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
-            val expression = descriptor.psiElement as? KtExpression ?: return
+            val expression = descriptor.psiElement as? KtCallExpression ?: return
             val factory = KtPsiFactory(project)
-            val context = expression.analyze(BodyResolveMode.FULL)
             expression.containingKtFile.addImport(FqName("arrow.atomic.Atomic$typeName"))
-            val call = expression.getResolvedCall(context)
-            val argument = call?.valueArgumentsByIndex?.firstOrNull()?.arguments?.firstOrNull()?.getArgumentExpression() ?: return
+            val argument = expression.valueArguments.singleOrNull() ?: return
             val newExpression = factory.createExpression("Atomic${typeName}(${argument.text})")
             expression.replace(newExpression)
         }

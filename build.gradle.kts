@@ -1,14 +1,15 @@
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.models.ProductRelease
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.9.24"
-    id("org.jetbrains.intellij.platform") version "2.0.0-beta5"
+    id("org.jetbrains.kotlin.jvm") version "2.0.20"
+    id("org.jetbrains.intellij.platform") version "2.0.1"
 }
 
 group = "io.arrow-kt"
-version = "0.1.1"
+version = "0.2.0"
 
 repositories {
     mavenCentral()
@@ -19,7 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2023.3.6")
+        intellijIdeaCommunity("2024.2.1")
         instrumentationTools()
         pluginVerifier()
         bundledPlugin("com.intellij.java")
@@ -28,14 +29,14 @@ dependencies {
 }
 
 object Supported {
-    const val sinceBuild = "233"
-    const val untilBuild = "242.*"
+    const val sinceBuild = "242.21829.142"
+    const val untilBuild = "243.*"
 }
 
 intellijPlatform {
     buildSearchableOptions = false
 
-    verifyPlugin {
+    pluginVerification {
         ides {
             recommended()
             select {
@@ -51,11 +52,11 @@ intellijPlatform {
 tasks {
     // Set the JVM compatibility versions
     withType<JavaCompile> {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
+        sourceCompatibility = "21"
+        targetCompatibility = "21"
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
     }
 
     patchPluginXml {

@@ -1,112 +1,91 @@
 package arrow.intellij
 
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.components.KaDiagnosticCheckerFilter
+import org.jetbrains.kotlin.analysis.api.components.KaDiagnosticProvider
+import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
+import org.jetbrains.kotlin.analysis.api.resolution.KaCall
+import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
+import org.jetbrains.kotlin.analysis.api.symbols.KaVariableSymbol
+import org.jetbrains.kotlin.analysis.api.types.KaClassType
+import org.jetbrains.kotlin.analysis.api.types.KaFunctionType
+import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.idea.base.psi.imports.addImport
-import org.jetbrains.kotlin.idea.intentions.branchedTransformations.isNullExpression
-import org.jetbrains.kotlin.idea.resolve.ResolutionFacade
-import org.jetbrains.kotlin.idea.util.getResolutionScope
-import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtBinaryExpression
-import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
-import org.jetbrains.kotlin.resolve.scopes.LexicalScope
-import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.typeUtil.supertypes
-import org.jetbrains.kotlinx.serialization.compiler.resolve.toClassDescriptor
 
-fun KtExpression.inRaiseContext(
-    context: BindingContext,
-    resolver: ResolutionFacade
-): Boolean = raiseContexts(context, resolver).any()
-
-fun KtExpression.raiseContexts(
-    context: BindingContext,
-    resolver: ResolutionFacade
-): Sequence<KotlinType> = getReceivers(context, resolver).filter(KotlinType::isRaise)
-
-fun KtExpression.getReceivers(
-    context: BindingContext,
-    resolver: ResolutionFacade
-): Sequence<KotlinType> = this.getResolutionScope(context, resolver).parentsWithSelf.mapNotNull {
-    (it as? LexicalScope)?.implicitReceiver?.type
-}
-
-fun KtExpression.singleBlockExpression(): KtExpression? = when (this) {
-    is KtBlockExpression -> statements.singleOrNull()
-    else -> this
-}
-
-fun KtExpression.findEqualsNull(): KtExpression? {
-    if (this !is KtBinaryExpression) return null
-    if (this.operationToken != KtTokens.EQEQ && this.operationToken != KtTokens.EQEQEQ) return null
-    if (right.isNullExpression()) return left
-    if (left.isNullExpression()) return right
-    return null
-}
-
-fun KtExpression.findArgumentToRaise(
-    context: BindingContext
-): KtExpression? =
-    getResolvedCall(context)
-        ?.valueArgumentsByIndex?.firstOrNull()
-        ?.arguments?.firstOrNull()
-        ?.getArgumentExpression()
-
-val CallableDescriptor.fqNameString: String?
-    get() = fqNameOrNull()?.asString()
-
-val CallableDescriptor.hasRaiseContext: Boolean
-    get() = this.extensionReceiverParameter?.type?.isRaise == true
-            || this.dispatchReceiverParameter?.type?.isRaise == true
-            || this.contextReceiverParameters.any { it.type.isRaise }
-
-val KotlinType.fqNameString: String?
-    get() = toClassDescriptor?.fqNameOrNull()?.asString()
-
-val KotlinType.isRaise: Boolean
-    get() = fqNameString == "arrow.core.raise.Raise" || supertypes().any { it.isRaise }
-
-val BINDABLE_TYPES = setOf(
-    "arrow.core.Either",
-    "arrow.core.Validated",
-    "arrow.core.Ior",
-    "arrow.core.Option",
-    "arrow.core.Effect",
-    "arrow.core.EagerEffect",
-    "kotlin.Result",
-    "app.cash.quiver.Outcome",
-)
-
-val KotlinType?.isBindable: Boolean
-    get() = this != null && fqNameString in BINDABLE_TYPES
-
-val KotlinType?.isNotBindable: Boolean
-    get() = this != null && fqNameString !in BINDABLE_TYPES
-
-val KotlinType.iterableElement: KotlinType?
-    get() = supertypes()
-        .firstOrNull { it.fqNameString == "kotlin.collections.Iterable" }
-        ?.arguments?.first()?.type
-
-val SERIALIZABLE_TYPES = setOf(
-    "arrow.core.Either",
-    "arrow.core.Validated",
-    "arrow.core.Ior",
-    "arrow.core.Option",
-    "arrow.core.NonEmptyList",
-    "arrow.core.NonEmptySet",
-)
-
-val KotlinType.isArrowSerializable: Boolean
-    get() = fqNameString in SERIALIZABLE_TYPES
+@OptIn(KaExperimentalApi::class)
+fun KaDiagnosticProvider.commonDiagnosticsFor(
+    element: KtElement
+): Collection<KaDiagnosticWithPsi<*>> = element.diagnostics(KaDiagnosticCheckerFilter.ONLY_COMMON_CHECKERS)
 
 fun KtFile.addImportIfMissing(fqName: String) {
     if (importDirectives.any { it.importedFqName?.asString() == fqName }) return
     addImport(FqName(fqName))
 }
+
+val KaType.simpleName: String?
+    get() = (this as? KaClassType)?.classId?.shortClassName?.asString()
+
+fun KaSession.isClassTypeFrom(
+    type: KaType,
+    classes: Collection<ClassId>
+): Boolean = classes.any { type.isClassType(it) }
+
+fun KaSession.getReceivers(
+    expression: KtExpression
+): List<KaType> = expression.containingKtFile.scopeContext(expression).implicitReceivers.map { it.type }
+
+fun KaSession.inRaiseContext(
+    expression: KtExpression
+): Boolean = raiseContexts(expression).any()
+
+fun KaSession.raiseContexts(
+    expression: KtExpression
+): List<KaType> = getReceivers(expression).filter { isRaise(it) }
+
+val RAISE_ID = ClassId.fromString("arrow/core/raise/Raise")
+
+fun KaSession.isRaise(type: KaType?): Boolean =
+    type != null && (type.isClassType(RAISE_ID) || type.allSupertypes.any { isRaise(it) })
+
+fun KaSession.hasRaiseContext(
+    symbol: KaVariableSymbol
+): Boolean = symbol.returnType is KaFunctionType && isRaise((symbol.returnType as KaFunctionType).receiverType)
+
+fun KaSession.hasRaiseContext(
+    call: KaCall
+): Boolean = when (call) {
+    is KaCallableMemberCall<*, *> -> {
+        val pas = call.partiallyAppliedSymbol
+        isRaise(pas.dispatchReceiver?.type) == true || isRaise(pas.extensionReceiver?.type) == true
+    }
+    else -> false
+}
+
+val BINDABLE_TYPES = setOf(
+    ClassId.fromString("arrow/core/Either"),
+    ClassId.fromString("arrow/core/Validated"),
+    ClassId.fromString("arrow/core/Ior"),
+    ClassId.fromString("arrow/core/Option"),
+    ClassId.fromString("arrow/core/Effect"),
+    ClassId.fromString("arrow/core/EagerEffect"),
+    ClassId.fromString("kotlin/Result"),
+    ClassId.fromString("app/cash/quiver/Outcome"),
+)
+
+fun KaSession.isBindable(type: KaType?) =
+    type != null && isClassTypeFrom(type, BINDABLE_TYPES)
+
+fun KaSession.isNotBindable(type: KaType?) =
+    type != null && !isClassTypeFrom(type, BINDABLE_TYPES)
+
+val ITERABLE_ID = ClassId.fromString("kotlin/collections/Iterable")
+
+fun KaSession.iterableElement(type: KaType): KaType? =
+    (type.allSupertypes.firstOrNull { it.isClassType(ITERABLE_ID) } as? KaClassType)
+        ?.typeArguments?.firstOrNull()?.type
