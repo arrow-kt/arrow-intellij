@@ -29,7 +29,7 @@ dependencies {
 }
 
 object Supported {
-    const val sinceBuild = "242.21829.142"
+    const val sinceBuild = "242.2.1"
     const val untilBuild = "243.*"
 }
 
