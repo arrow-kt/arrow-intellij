@@ -1,7 +1,6 @@
 package arrow.intellij.fix
 
 import arrow.intellij.addImportIfMissing
-import arrow.intellij.commonDiagnosticsFor
 import arrow.intellij.isClassTypeFrom
 import arrow.intellij.simpleName
 import com.intellij.codeInspection.LocalQuickFix
@@ -11,24 +10,23 @@ import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
 import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.components.KaDiagnosticCheckerFilter
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtTypeElement
-import org.jetbrains.kotlin.psi.declarationVisitor
+import org.jetbrains.kotlin.psi.parameterVisitor
 
 class MissingSerializer: AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
-        declarationVisitor visitor@{ declaration ->
-            val callable = declaration as? KtCallableDeclaration ?: return@visitor
-            analyze(callable) {
-                val typeReference = callable.typeReference ?: return@visitor
-                val type = typeReference.type
-                // NOT WORKING RIGHT NOW!!
-                val hasMissingSerializer = commonDiagnosticsFor(callable).any {
-                    it.factoryName == "SERIALIZER_NOT_FOUND"
+        parameterVisitor visitor@{ parameter ->
+            analyze(parameter) {
+                val typeReference = parameter.typeReference ?: return@visitor
+                val allDiagnostics = parameter.containingKtFile.collectDiagnostics(KaDiagnosticCheckerFilter.ONLY_COMMON_CHECKERS)
+                val hasMissingSerializer = allDiagnostics.any {
+                    it.factoryName == "SERIALIZER_NOT_FOUND" && typeReference.textRange in it.textRanges
                 }
+                val type = typeReference.type
                 if (!hasMissingSerializer || !isClassTypeFrom(type, SERIALIZABLE_TYPES)) return@visitor
 
                 val simpleName = type.simpleName ?: "??"
