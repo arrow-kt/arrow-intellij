@@ -4,7 +4,8 @@ import arrow.intellij.NonDuplicateProblemsHolder
 import arrow.intellij.addImportIfMissing
 import arrow.intellij.commonDiagnosticsFor
 import arrow.intellij.isBindable
-import arrow.intellij.isRaise
+import arrow.intellij.isClassId
+import arrow.intellij.RAISE_ID
 import arrow.intellij.raiseContexts
 import arrow.intellij.simpleName
 import com.intellij.codeInspection.LocalQuickFix
@@ -70,7 +71,7 @@ class WithErrorInspection: AbstractKotlinInspection() {
         holder: NonDuplicateProblemsHolder
     ) {
         if (receiverType == null) return
-        if (!isRaise(receiverType) && !isBindable(receiverType)) return
+        if (!isClassId(RAISE_ID, receiverType) && !isBindable(receiverType)) return
 
         if (receiverType !is KaClassType) return
         val errorType = receiverType.typeArguments.first().type ?: return

@@ -7,6 +7,8 @@ import org.jetbrains.kotlin.analysis.api.components.KaDiagnosticProvider
 import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
 import org.jetbrains.kotlin.analysis.api.resolution.KaCall
 import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
+import org.jetbrains.kotlin.analysis.api.symbols.KaClassSymbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaClassifierSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaVariableSymbol
 import org.jetbrains.kotlin.analysis.api.types.KaClassType
 import org.jetbrains.kotlin.analysis.api.types.KaFunctionType
@@ -40,29 +42,46 @@ fun KaSession.getReceivers(
     expression: KtExpression
 ): List<KaType> = expression.containingKtFile.scopeContext(expression).implicitReceivers.map { it.type }
 
+val RAISE_ID = ClassId.fromString("arrow/core/raise/Raise")
+val COROUTINE_SCOPE_ID = ClassId.fromString("kotlinx/coroutines/CoroutineScope")
+
 fun KaSession.inRaiseContext(
     expression: KtExpression
 ): Boolean = raiseContexts(expression).any()
 
 fun KaSession.raiseContexts(
     expression: KtExpression
-): List<KaType> = getReceivers(expression).filter { isRaise(it) }
+): List<KaType> = getReceivers(expression).filter { isClassId(RAISE_ID, it) }
 
-val RAISE_ID = ClassId.fromString("arrow/core/raise/Raise")
+fun KaSession.isClassId(
+    classId: ClassId,
+    type: KaType?
+): Boolean =
+    type != null && (type.isClassType(classId) || type.allSupertypes.any { isClassId(classId, it) })
 
-fun KaSession.isRaise(type: KaType?): Boolean =
-    type != null && (type.isClassType(RAISE_ID) || type.allSupertypes.any { isRaise(it) })
+fun KaSession.isClassId(
+    classId: ClassId,
+    symbol: KaClassifierSymbol?
+): Boolean =
+    symbol is KaClassSymbol && (symbol.classId == classId || symbol.superTypes.any { isClassId(classId, it) })
 
-fun KaSession.hasRaiseContext(
+fun KaSession.hasContextWithClassId(
+    classId: ClassId,
+    type: KaType
+): Boolean = type is KaFunctionType && isClassId(classId, type.receiverType)
+
+fun KaSession.hasContextWithClassId(
+    classId: ClassId,
     symbol: KaVariableSymbol
-): Boolean = symbol.returnType is KaFunctionType && isRaise((symbol.returnType as KaFunctionType).receiverType)
+): Boolean = hasContextWithClassId(classId, symbol.returnType)
 
-fun KaSession.hasRaiseContext(
+fun KaSession.hasContextWithClassId(
+    classId: ClassId,
     call: KaCall
 ): Boolean = when (call) {
     is KaCallableMemberCall<*, *> -> {
         val pas = call.partiallyAppliedSymbol
-        isRaise(pas.dispatchReceiver?.type) == true || isRaise(pas.extensionReceiver?.type) == true
+        isClassId(classId, pas.dispatchReceiver?.type) == true || isClassId(classId, pas.extensionReceiver?.type) == true
     }
     else -> false
 }
