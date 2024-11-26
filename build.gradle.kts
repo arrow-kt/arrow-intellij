@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.0.20"
+    id("org.jetbrains.kotlin.jvm") version "2.0.21"
     id("org.jetbrains.intellij.platform") version "2.1.0"
 }
 
@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2024.2.1")
+        intellijIdeaCommunity("2024.3")
         instrumentationTools()
         pluginVerifier()
         bundledPlugin("com.intellij.java")
@@ -29,8 +29,8 @@ dependencies {
 }
 
 object Supported {
-    const val sinceBuild = "242.2.1"
-    const val untilBuild = "243.*"
+    const val sinceBuild = "243"
+    const val untilBuild = "251.*"
 }
 
 intellijPlatform {
@@ -41,7 +41,7 @@ intellijPlatform {
             recommended()
             select {
                 types = listOf(IntelliJPlatformType.IntellijIdeaCommunity)
-                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.EAP)
+                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.BETA, ProductRelease.Channel.EAP)
                 sinceBuild = Supported.sinceBuild
                 untilBuild = Supported.untilBuild
             }

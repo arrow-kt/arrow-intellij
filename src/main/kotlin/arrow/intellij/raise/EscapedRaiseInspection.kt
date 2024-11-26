@@ -75,7 +75,7 @@ class EscapedRaiseInspection: AbstractKotlinInspection() {
             val visitor = callExpressionRecursiveVisitor loop@{ expr ->
                 val call = expr.resolveToCall()?.successfulCallOrNull<KaCallableMemberCall<*, *>>() ?: return@loop
                 val containing = isClassId(RAISE_ID, call.symbol.containingDeclaration as? KaClassSymbol)
-                val param = isClassId(RAISE_ID, call.symbol.receiverParameter?.type)
+                val param = isClassId(RAISE_ID, call.symbol.receiverParameter?.returnType)
                 if (containing || param) { somethingFound = true }
             }
             visitor.visitLambdaExpression(lambda)
