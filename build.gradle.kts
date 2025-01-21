@@ -20,8 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2024.3")
-        instrumentationTools()
+        intellijIdeaCommunity("2024.3.2")
         pluginVerifier()
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
