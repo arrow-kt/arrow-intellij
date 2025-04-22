@@ -15,14 +15,18 @@ _Related to `Raise`_:
 - Missing `bind` and `bindAll`
 - Different contexts, and missing `withError`
 - Idiomatic usage of `ensure` and `ensureNotNull`
-
-_Potentially wrong usages_:
-
 - Potential escape of `Raise` context
-- Incorrect usage of `Atomic` with primitive types
-- Matching on `Eval` values directly
+- Gutter icons for calls using `Raise`
 
-_General fixes_:
+_Related to `Eval`_:
+- Matching on `Eval` values directly
+- Gutter icons for `later` and `always`
+
+_Related to atomics_:
+
+- Incorrect usage of `Atomic` with primitive types
+
+_Related to serialization_:
 
 - Missing serializer for an Arrow type
 
