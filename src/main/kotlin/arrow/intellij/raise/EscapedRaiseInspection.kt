@@ -5,6 +5,7 @@ import arrow.intellij.RAISE_ID
 import arrow.intellij.hasContextWithClassId
 import arrow.intellij.inRaiseContext
 import arrow.intellij.isClassId
+import arrow.intellij.symbolThatWorksAcrossVersions
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.psi.PsiElementVisitor
@@ -45,7 +46,7 @@ class EscapedRaiseInspection: AbstractKotlinInspection() {
                 @OptIn(KaExperimentalApi::class)
                 val callsInPlaceVariables =
                     (symbol as? KaNamedFunctionSymbol)?.contractEffects.orEmpty().mapNotNull {
-                        (it as? KaContractCallsInPlaceContractEffectDeclaration)?.valueParameterReference?.parameterSymbol
+                        (it as? KaContractCallsInPlaceContractEffectDeclaration)?.valueParameterReference?.symbolThatWorksAcrossVersions
                     }
                 val isSuspend = namedSymbol?.isSuspend == true
                 val hasProblems = potentiallyCaptured.any { (argument, param) ->

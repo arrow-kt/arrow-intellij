@@ -47,7 +47,7 @@ class BindInspection: AbstractKotlinInspection() {
         diagnostic: KaDiagnosticWithPsi<*>,
         holder: NonDuplicateProblemsHolder
     ) {
-        if (diagnostic.factoryName != "TYPE_MISMATCH") return
+        if (!diagnostic.factoryName.endsWith("TYPE_MISMATCH")) return
 
         // check twice, as different options give better results
         // since we use a NonDuplicateProblemsHolder, we get no duplicates

@@ -4,12 +4,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.0.21"
-    id("org.jetbrains.intellij.platform") version "2.2.1"
+    id("org.jetbrains.kotlin.jvm") version "2.1.20"
+    id("org.jetbrains.intellij.platform") version "2.5.0"
 }
 
 group = "io.arrow-kt"
-version = "0.2.1"
+version = "0.3"
 
 repositories {
     mavenCentral()
@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2024.3.2")
+        intellijIdeaCommunity("2025.1")
         pluginVerifier()
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
@@ -29,7 +29,7 @@ dependencies {
 
 object Supported {
     const val sinceBuild = "243"
-    const val untilBuild = "251.*"
+    const val untilBuild = "252.*"
 }
 
 intellijPlatform {
@@ -39,7 +39,7 @@ intellijPlatform {
         ides {
             recommended()
             select {
-                types = listOf(IntelliJPlatformType.IntellijIdeaCommunity)
+                types = listOf(IntelliJPlatformType.IntellijIdeaCommunity, IntelliJPlatformType.AndroidStudio)
                 channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.BETA, ProductRelease.Channel.EAP)
                 sinceBuild = Supported.sinceBuild
                 untilBuild = Supported.untilBuild

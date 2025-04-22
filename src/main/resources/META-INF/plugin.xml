@@ -93,6 +93,12 @@
                 groupKey="arrow.group"
                 key="inspection.serializer"
                 implementationClass="arrow.intellij.fix.MissingSerializer"/>
+        <codeInsight.lineMarkerProvider
+                language="kotlin"
+                implementationClass="arrow.intellij.gutter.EvalGutter" />
+        <codeInsight.lineMarkerProvider
+                language="kotlin"
+                implementationClass="arrow.intellij.gutter.RaiseGutter" />
         <!-- recommended for the following libraries -->
         <dependencySupport kind="java" coordinate="io.arrow-kt:arrow-atomic" />
         <dependencySupport kind="java" coordinate="io.arrow-kt:arrow-core" />

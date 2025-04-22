@@ -1,14 +1,17 @@
 package arrow.intellij
 
+import com.intellij.icons.AllIcons
 import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.components.KaDiagnosticCheckerFilter
 import org.jetbrains.kotlin.analysis.api.components.KaDiagnosticProvider
+import org.jetbrains.kotlin.analysis.api.contracts.description.KaContractParameterValue
 import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
 import org.jetbrains.kotlin.analysis.api.resolution.KaCall
 import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassifierSymbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaVariableSymbol
 import org.jetbrains.kotlin.analysis.api.types.KaClassType
 import org.jetbrains.kotlin.analysis.api.types.KaFunctionType
@@ -16,9 +19,13 @@ import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.idea.base.psi.imports.addImport
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
+import javax.swing.Icon
+import kotlin.reflect.KProperty1
+import kotlin.reflect.full.memberProperties
 
 @OptIn(KaExperimentalApi::class)
 fun KaDiagnosticProvider.commonDiagnosticsFor(
@@ -108,3 +115,26 @@ val ITERABLE_ID = ClassId.fromString("kotlin/collections/Iterable")
 fun KaSession.iterableElement(type: KaType): KaType? =
     (type.allSupertypes.firstOrNull { it.isClassType(ITERABLE_ID) } as? KaClassType)
         ?.typeArguments?.firstOrNull()?.type
+
+@OptIn(KaExperimentalApi::class) @Suppress("UNCHECKED_CAST")
+val KaContractParameterValue.symbolThatWorksAcrossVersions: KaSymbol
+    get() = (KaContractParameterValue::class.memberProperties.first {
+        it.name == "symbol" || it.name == "parameterSymbol"
+    } as KProperty1<KaContractParameterValue, KaSymbol>).get(this)
+
+val EVAL_TYPES = setOf(
+    ClassId.fromString("arrow/eval/SuspendEval"),
+    ClassId.fromString("arrow/eval/Eval"),
+    ClassId.fromString("arrow/core/Eval")
+)
+
+val EVAL_COMPANION_TYPES = setOf(
+    ClassId.fromString("arrow/eval/SuspendEval.Companion"),
+    ClassId.fromString("arrow/eval/Eval.Companion"),
+    ClassId.fromString("arrow/core/Eval.Companion")
+)
+
+val EVAL_CALLABLES: Map<Name, Pair<String, Icon>> = mapOf(
+    Name.identifier("later") to ("Value is computed later" to AllIcons.RunConfigurations.TestPaused),
+    Name.identifier("always") to ("Value is computed every time" to AllIcons.Actions.RestartFrame)
+)
