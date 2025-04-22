@@ -7,13 +7,17 @@ import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.codeStyle.CodeStyleManager
+import com.intellij.psi.util.childrenOfType
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
+import org.jetbrains.kotlin.analysis.api.resolution.KaVariableAccessCall
 import org.jetbrains.kotlin.analysis.api.resolution.successfulCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaVariableSymbol
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.idea.intentions.branchedTransformations.isNullExpression
 import org.jetbrains.kotlin.idea.intentions.negate
@@ -24,6 +28,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtIfExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
@@ -41,13 +46,15 @@ class EnsureInspection: AbstractKotlinInspection() {
                 if (!inRaiseContext(expression)) return@visitor
 
                 // check that we have a 'raise' in either then or else
+                val originalCondition = expression.condition ?: return@visitor
+                val originalConditionVariables = usedVariables(originalCondition)
                 val (condition, place) = when {
-                    findArgumentToRaise(singleThenExpression) != null -> expression.condition to WithErrorPlace.THEN
-                    findArgumentToRaise(singleElseExpression) != null -> expression.condition!!.negate() to WithErrorPlace.ELSE
+                    findArgumentToRaise(singleElseExpression, originalConditionVariables) != null -> originalCondition.negate() to WithErrorPlace.ELSE
+                    findArgumentToRaise(singleThenExpression, originalConditionVariables) != null -> originalCondition to WithErrorPlace.THEN
                     else -> return@visitor
                 }
                 // we found it!
-                if (condition?.findEqualsNull() == null) {
+                if (condition.findEqualsNull() == null) {
                     holder.registerProblem(
                         expression,
                         "Conditional expression may be replaced with 'ensure'",
@@ -68,11 +75,15 @@ class EnsureInspection: AbstractKotlinInspection() {
     val RAISE_CALLABLE_ID = CallableId(ClassId.fromString("arrow/core/raise/Raise"), Name.identifier("raise"))
 
     fun KaSession.findArgumentToRaise(
-        expression: KtExpression?
+        expression: KtExpression?,
+        conditionVariables: Set<KaVariableSymbol>
     ): KtExpression? {
         val call = expression?.resolveToCall()?.successfulCallOrNull<KaFunctionCall<*>>() ?: return null
         if (call.symbol.callableId != RAISE_CALLABLE_ID) return null
-        return call.argumentMapping.keys.singleOrNull()
+        val argument = call.argumentMapping.keys.singleOrNull() ?: return null
+        val smartCastedVariables = smartCastedVariables(argument)
+        if (smartCastedVariables.any { it in conditionVariables }) return null
+        return argument
     }
 
     enum class WithErrorPlace { THEN, ELSE }
@@ -167,4 +178,20 @@ fun KtExpression.findEqualsNull(): KtExpression? {
 fun KtExpression.singleBlockExpression(): KtExpression? = when (this) {
     is KtBlockExpression -> statements.singleOrNull()
     else -> this
+}
+
+fun KaSession.usedVariables(expression: PsiElement): Set<KaVariableSymbol> {
+    if (expression is KtElement) {
+        val variable = expression.resolveToCall()?.successfulCallOrNull<KaVariableAccessCall>()
+        if (variable != null) return setOf(variable.symbol)
+    }
+    return expression.childrenOfType<KtExpression>().flatMapTo(mutableSetOf()) { usedVariables(it) }
+}
+
+fun KaSession.smartCastedVariables(expression: PsiElement): Set<KaVariableSymbol> {
+    if (expression is KtElement) {
+        val variable = expression.resolveToCall()?.successfulCallOrNull<KaVariableAccessCall>()
+        if (variable != null) return setOf(variable.symbol)
+    }
+    return expression.children.flatMapTo(mutableSetOf()) { smartCastedVariables(it) }
 }
