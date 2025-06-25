@@ -99,6 +99,9 @@
         <codeInsight.lineMarkerProvider
                 language="kotlin"
                 implementationClass="arrow.intellij.gutter.RaiseGutter" />
+        <completion.contributor
+                language="kotlin"
+                implementationClass="arrow.intellij.raise.RaiseCompletion" />
         <!-- recommended for the following libraries -->
         <dependencySupport kind="java" coordinate="io.arrow-kt:arrow-atomic" />
         <dependencySupport kind="java" coordinate="io.arrow-kt:arrow-core" />

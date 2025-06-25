@@ -50,6 +50,7 @@ fun KaSession.getReceivers(
 ): List<KaType> = expression.containingKtFile.scopeContext(expression).implicitReceivers.map { it.type }
 
 val RAISE_ID = ClassId.fromString("arrow/core/raise/Raise")
+val RAISE_ACCUMULATE_ID = ClassId.fromString("arrow/core/raise/RaiseAccumulate")
 val COROUTINE_SCOPE_ID = ClassId.fromString("kotlinx/coroutines/CoroutineScope")
 
 fun KaSession.inRaiseContext(
@@ -59,6 +60,14 @@ fun KaSession.inRaiseContext(
 fun KaSession.raiseContexts(
     expression: KtExpression
 ): List<KaType> = getReceivers(expression).filter { isClassId(RAISE_ID, it) }
+
+fun KaSession.inRaiseAccumulateContext(
+    expression: KtExpression
+): Boolean = raiseAccumulateContexts(expression).any()
+
+fun KaSession.raiseAccumulateContexts(
+    expression: KtExpression
+): List<KaType> = getReceivers(expression).filter { isClassId(RAISE_ACCUMULATE_ID, it) }
 
 fun KaSession.isClassId(
     classId: ClassId,
