@@ -73,6 +73,7 @@ class BindInspection: AbstractKotlinInspection() {
                 val pas = candidate.partiallyAppliedSymbol
                 pas.extensionReceiver?.let { checkArgument(it, holder) }
                 pas.dispatchReceiver?.let { checkArgument(it, holder) }
+                // TODO is there something to do here to handle context parameters? Not really sure what this inspection checks
             }
         }
     }
