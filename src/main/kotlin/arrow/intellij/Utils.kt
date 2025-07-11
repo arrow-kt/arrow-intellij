@@ -9,8 +9,10 @@ import org.jetbrains.kotlin.analysis.api.contracts.description.KaContractParamet
 import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
 import org.jetbrains.kotlin.analysis.api.resolution.KaCall
 import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
+import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassifierSymbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaContextParameterSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaVariableSymbol
 import org.jetbrains.kotlin.analysis.api.types.KaClassType
@@ -91,13 +93,14 @@ fun KaSession.hasContextWithClassId(
     symbol: KaVariableSymbol
 ): Boolean = hasContextWithClassId(classId, symbol.returnType)
 
+@OptIn(KaExperimentalApi::class)
 fun KaSession.hasContextWithClassId(
     classId: ClassId,
     call: KaCall
 ): Boolean = when (call) {
     is KaCallableMemberCall<*, *> -> {
         val pas = call.partiallyAppliedSymbol
-        isClassId(classId, pas.dispatchReceiver?.type) == true || isClassId(classId, pas.extensionReceiver?.type) == true
+        isClassId(classId, pas.dispatchReceiver?.type) || isClassId(classId, pas.extensionReceiver?.type) || pas.contextArguments.any { isClassId(classId, it.type) }
     }
     else -> false
 }
@@ -125,7 +128,8 @@ fun KaSession.iterableElement(type: KaType): KaType? =
     (type.allSupertypes.firstOrNull { it.isClassType(ITERABLE_ID) } as? KaClassType)
         ?.typeArguments?.firstOrNull()?.type
 
-@OptIn(KaExperimentalApi::class) @Suppress("UNCHECKED_CAST")
+@OptIn(KaExperimentalApi::class)
+@Suppress("UNCHECKED_CAST")
 val KaContractParameterValue.symbolThatWorksAcrossVersions: KaSymbol
     get() = (KaContractParameterValue::class.memberProperties.first {
         it.name == "symbol" || it.name == "parameterSymbol"
