@@ -12,6 +12,7 @@ import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
+import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
@@ -56,6 +57,7 @@ class BindInspection: AbstractKotlinInspection() {
             checkActualExpected(expression, diagnostic.actualType, diagnostic.expectedType, holder)
     }
 
+    @OptIn(KaExperimentalApi::class)
     private fun KaSession.checkNoneApplicable(
         expr: KtExpression,
         diagnostic: KaDiagnosticWithPsi<*>,
@@ -71,6 +73,7 @@ class BindInspection: AbstractKotlinInspection() {
                 val pas = candidate.partiallyAppliedSymbol
                 pas.extensionReceiver?.let { checkArgument(it, holder) }
                 pas.dispatchReceiver?.let { checkArgument(it, holder) }
+                // TODO is there something to do here to handle context parameters? Not really sure what this inspection checks
             }
         }
     }

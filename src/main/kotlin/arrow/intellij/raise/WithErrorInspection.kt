@@ -14,24 +14,28 @@ import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
+import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
 import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
+import org.jetbrains.kotlin.analysis.api.resolution.KaSimpleFunctionCall
 import org.jetbrains.kotlin.analysis.api.resolution.calls
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
+import org.jetbrains.kotlin.analysis.api.symbols.contextParameters
 import org.jetbrains.kotlin.analysis.api.symbols.receiverType
 import org.jetbrains.kotlin.analysis.api.types.KaClassType
 import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
 import org.jetbrains.kotlin.idea.codeinsight.utils.findExistingEditor
 import org.jetbrains.kotlin.idea.core.moveCaret
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.expressionVisitor
 
-class WithErrorInspection: AbstractKotlinInspection() {
+class WithErrorInspection : AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         expressionVisitor visitor@{ expr ->
             analyze(expr) {
@@ -46,21 +50,27 @@ class WithErrorInspection: AbstractKotlinInspection() {
             }
         }
 
+    @OptIn(KaExperimentalApi::class)
     private fun KaSession.checkWrongReceiver(
         raiseContexts: List<KaType>,
         expr: KtExpression,
         diagnostic: KaDiagnosticWithPsi<*>,
         holder: NonDuplicateProblemsHolder
     ) {
-        if (!diagnostic.factoryName.startsWith("UNRESOLVED_REFERENCE")) return
+        if (!diagnostic.factoryName.startsWith("UNRESOLVED_REFERENCE") && !diagnostic.factoryName.startsWith("NO_CONTEXT_ARGUMENT")) return
         val call = expr.resolveToCall() ?: return
         for (candidate in call.calls) {
-            if (candidate !is KaCallableMemberCall<*, *>) continue
+            if (candidate !is KaCallableMemberCall<*, *> && candidate !is KaSimpleFunctionCall) continue
             val pas = candidate.partiallyAppliedSymbol
             val symbol = candidate.symbol
             checkContext(raiseContexts, expr, pas.extensionReceiver?.type, holder)
             checkContext(raiseContexts, expr, pas.dispatchReceiver?.type, holder)
             checkContext(raiseContexts, expr, symbol.receiverType, holder)
+            // For some reason here pas.contextArguments is empty, so we check the symbol directly and use returnType
+            // which holds the type of the context parameter
+            symbol.contextParameters.forEach {
+                checkContext(raiseContexts, expr, it.returnType, holder)
+            }
         }
     }
 
@@ -89,7 +99,7 @@ class WithErrorInspection: AbstractKotlinInspection() {
         }
     }
 
-    class AddWithError: LocalQuickFix {
+    class AddWithError : LocalQuickFix {
         override fun getName(): String = "Add call to 'withError'"
         override fun getFamilyName(): String = "Fixes related to Raise"
 
@@ -99,7 +109,8 @@ class WithErrorInspection: AbstractKotlinInspection() {
             element.containingKtFile.addImportIfMissing("arrow.core.raise.withError")
             val elementToModify = when (val p = element.parent.parent) {
                 is KtDotQualifiedExpression -> p
-                else -> element.parent as KtExpression
+                else if (element !is KtCallExpression) -> element.parent as KtExpression
+                else -> element
             }
             val originalOffset = elementToModify.textOffset
             val newElementText = "withError({  }) { ${elementToModify.text} }"
