@@ -73,7 +73,6 @@ class BindInspection: AbstractKotlinInspection() {
                 val pas = candidate.partiallyAppliedSymbol
                 pas.extensionReceiver?.let { checkArgument(it, holder) }
                 pas.dispatchReceiver?.let { checkArgument(it, holder) }
-                // TODO is there something to do here to handle context parameters? Not really sure what this inspection checks
             }
         }
     }
@@ -113,13 +112,13 @@ class BindInspection: AbstractKotlinInspection() {
         val iterableExpression = expressionType?.let { iterableElement(it) }
         val iterableExpected = expectedType?.let { iterableElement(it) }
         if (isBindable(iterableExpression) && isNotBindable(iterableExpected)) {
-           holder.registerProblem(
-               expression,
-               "Potentially missing 'bindAll'",
-               ProblemHighlightType.GENERIC_ERROR,
-               AddBind("bindAll")
-           )
-       }
+            holder.registerProblem(
+                expression,
+                "Potentially missing 'bindAll'",
+                ProblemHighlightType.GENERIC_ERROR,
+                AddBind("bindAll")
+            )
+        }
     }
 
     class AddBind(private val functionName: String): LocalQuickFix {

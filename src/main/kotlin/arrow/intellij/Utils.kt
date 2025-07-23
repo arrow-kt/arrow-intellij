@@ -9,10 +9,8 @@ import org.jetbrains.kotlin.analysis.api.contracts.description.KaContractParamet
 import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
 import org.jetbrains.kotlin.analysis.api.resolution.KaCall
 import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
-import org.jetbrains.kotlin.analysis.api.resolution.KaFunctionCall
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassifierSymbol
-import org.jetbrains.kotlin.analysis.api.symbols.KaContextParameterSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaVariableSymbol
 import org.jetbrains.kotlin.analysis.api.types.KaClassType
@@ -47,9 +45,10 @@ fun KaSession.isClassTypeFrom(
     classes: Collection<ClassId>
 ): Boolean = classes.any { type.isClassType(it) }
 
+@OptIn(KaExperimentalApi::class)
 fun KaSession.getReceivers(
     expression: KtExpression
-): List<KaType> = expression.containingKtFile.scopeContext(expression).implicitReceivers.map { it.type }
+): List<KaType> = expression.containingKtFile.scopeContext(expression).implicitValues.map { it.type }
 
 val RAISE_ID = ClassId.fromString("arrow/core/raise/Raise")
 val RAISE_ACCUMULATE_ID = ClassId.fromString("arrow/core/raise/RaiseAccumulate")
@@ -100,8 +99,11 @@ fun KaSession.hasContextWithClassId(
 ): Boolean = when (call) {
     is KaCallableMemberCall<*, *> -> {
         val pas = call.partiallyAppliedSymbol
-        isClassId(classId, pas.dispatchReceiver?.type) || isClassId(classId, pas.extensionReceiver?.type) || pas.contextArguments.any { isClassId(classId, it.type) }
+        isClassId(classId, pas.dispatchReceiver?.type) ||
+                isClassId(classId, pas.extensionReceiver?.type) ||
+                pas.contextArguments.any { isClassId(classId, it.type) }
     }
+
     else -> false
 }
 
