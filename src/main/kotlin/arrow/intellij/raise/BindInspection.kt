@@ -12,6 +12,7 @@ import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
+import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
@@ -56,6 +57,7 @@ class BindInspection: AbstractKotlinInspection() {
             checkActualExpected(expression, diagnostic.actualType, diagnostic.expectedType, holder)
     }
 
+    @OptIn(KaExperimentalApi::class)
     private fun KaSession.checkNoneApplicable(
         expr: KtExpression,
         diagnostic: KaDiagnosticWithPsi<*>,
@@ -110,13 +112,13 @@ class BindInspection: AbstractKotlinInspection() {
         val iterableExpression = expressionType?.let { iterableElement(it) }
         val iterableExpected = expectedType?.let { iterableElement(it) }
         if (isBindable(iterableExpression) && isNotBindable(iterableExpected)) {
-           holder.registerProblem(
-               expression,
-               "Potentially missing 'bindAll'",
-               ProblemHighlightType.GENERIC_ERROR,
-               AddBind("bindAll")
-           )
-       }
+            holder.registerProblem(
+                expression,
+                "Potentially missing 'bindAll'",
+                ProblemHighlightType.GENERIC_ERROR,
+                AddBind("bindAll")
+            )
+        }
     }
 
     class AddBind(private val functionName: String): LocalQuickFix {

@@ -45,9 +45,10 @@ fun KaSession.isClassTypeFrom(
     classes: Collection<ClassId>
 ): Boolean = classes.any { type.isClassType(it) }
 
+@OptIn(KaExperimentalApi::class)
 fun KaSession.getReceivers(
     expression: KtExpression
-): List<KaType> = expression.containingKtFile.scopeContext(expression).implicitReceivers.map { it.type }
+): List<KaType> = expression.containingKtFile.scopeContext(expression).implicitValues.map { it.type }
 
 val RAISE_ID = ClassId.fromString("arrow/core/raise/Raise")
 val RAISE_ACCUMULATE_ID = ClassId.fromString("arrow/core/raise/RaiseAccumulate")
@@ -91,14 +92,18 @@ fun KaSession.hasContextWithClassId(
     symbol: KaVariableSymbol
 ): Boolean = hasContextWithClassId(classId, symbol.returnType)
 
+@OptIn(KaExperimentalApi::class)
 fun KaSession.hasContextWithClassId(
     classId: ClassId,
     call: KaCall
 ): Boolean = when (call) {
     is KaCallableMemberCall<*, *> -> {
         val pas = call.partiallyAppliedSymbol
-        isClassId(classId, pas.dispatchReceiver?.type) == true || isClassId(classId, pas.extensionReceiver?.type) == true
+        isClassId(classId, pas.dispatchReceiver?.type) ||
+                isClassId(classId, pas.extensionReceiver?.type) ||
+                pas.contextArguments.any { isClassId(classId, it.type) }
     }
+
     else -> false
 }
 
@@ -125,7 +130,8 @@ fun KaSession.iterableElement(type: KaType): KaType? =
     (type.allSupertypes.firstOrNull { it.isClassType(ITERABLE_ID) } as? KaClassType)
         ?.typeArguments?.firstOrNull()?.type
 
-@OptIn(KaExperimentalApi::class) @Suppress("UNCHECKED_CAST")
+@OptIn(KaExperimentalApi::class)
+@Suppress("UNCHECKED_CAST")
 val KaContractParameterValue.symbolThatWorksAcrossVersions: KaSymbol
     get() = (KaContractParameterValue::class.memberProperties.first {
         it.name == "symbol" || it.name == "parameterSymbol"
