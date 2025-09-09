@@ -99,9 +99,8 @@ fun KaSession.hasContextWithClassId(
 ): Boolean = when (call) {
     is KaCallableMemberCall<*, *> -> {
         val pas = call.partiallyAppliedSymbol
-        isClassId(classId, pas.dispatchReceiver?.type) ||
-                isClassId(classId, pas.extensionReceiver?.type) ||
-                pas.contextArguments.any { isClassId(classId, it.type) }
+        val implicitValues = listOfNotNull(pas.dispatchReceiver, pas.extensionReceiver) + pas.contextArguments
+        implicitValues.any { isClassId(classId, it.type) }
     }
 
     else -> false
