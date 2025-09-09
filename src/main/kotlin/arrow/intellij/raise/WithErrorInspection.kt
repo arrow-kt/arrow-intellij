@@ -60,7 +60,7 @@ class WithErrorInspection : AbstractKotlinInspection() {
         if (!diagnostic.factoryName.startsWith("UNRESOLVED_REFERENCE") && !diagnostic.factoryName.startsWith("NO_CONTEXT_ARGUMENT")) return
         val call = expr.resolveToCall() ?: return
         for (candidate in call.calls) {
-            if (candidate !is KaCallableMemberCall<*, *> && candidate !is KaSimpleFunctionCall) continue
+            if (candidate !is KaSimpleFunctionCall) continue
             val pas = candidate.partiallyAppliedSymbol
             val symbol = candidate.symbol
             checkContext(raiseContexts, expr, pas.extensionReceiver?.type, holder)
