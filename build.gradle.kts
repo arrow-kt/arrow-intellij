@@ -4,12 +4,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.2.10"
-    id("org.jetbrains.intellij.platform") version "2.7.2"
+    id("org.jetbrains.kotlin.jvm") version "2.2.20"
+    id("org.jetbrains.intellij.platform") version "2.9.0"
 }
 
 group = "io.arrow-kt"
-version = "0.3.1"
+version = "0.3.2"
 
 repositories {
     mavenCentral()
@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2025.1")
+        intellijIdeaCommunity("2025.2.1")
         pluginVerifier()
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
@@ -29,7 +29,7 @@ dependencies {
 
 object Supported {
     const val sinceBuild = "243"
-    const val untilBuild = "252.*"
+    const val untilBuild = "253.*"
 }
 
 intellijPlatform {
