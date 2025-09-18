@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "io.arrow-kt"
-version = "0.3.1"
+version = "0.3.2"
 
 repositories {
     mavenCentral()
@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2025.1")
+        intellijIdeaCommunity("2025.2.1")
         pluginVerifier()
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
@@ -29,7 +29,7 @@ dependencies {
 
 object Supported {
     const val sinceBuild = "243"
-    const val untilBuild = "252.*"
+    const val untilBuild = "253.*"
 }
 
 intellijPlatform {
