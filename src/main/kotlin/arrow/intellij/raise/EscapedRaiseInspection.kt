@@ -5,7 +5,6 @@ import arrow.intellij.RAISE_ID
 import arrow.intellij.hasContextWithClassId
 import arrow.intellij.inRaiseContext
 import arrow.intellij.isClassId
-import arrow.intellij.symbolThatWorksAcrossVersions
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.psi.PsiElementVisitor
@@ -38,6 +37,8 @@ class EscapedRaiseInspection: AbstractKotlinInspection() {
                 val namedSymbol = symbol as? KaNamedFunctionSymbol
                 // - if the function is inline, it's OK --> should this be overtaken by callsInPlace?
                 if (namedSymbol?.isInline == true) return@visitor
+                // - if it is part of the contract system, it's OK
+                if (namedSymbol?.callableId?.packageName?.asString()?.startsWith("kotlin.contracts") == true) return@visitor
                 // - if we require the Raise context, it's OK
                 if (hasContextWithClassId(RAISE_ID, call)) return@visitor
                 // - we must have an argument which captures
@@ -46,7 +47,7 @@ class EscapedRaiseInspection: AbstractKotlinInspection() {
                 @OptIn(KaExperimentalApi::class)
                 val callsInPlaceVariables =
                     (symbol as? KaNamedFunctionSymbol)?.contractEffects.orEmpty().mapNotNull {
-                        (it as? KaContractCallsInPlaceContractEffectDeclaration)?.valueParameterReference?.symbolThatWorksAcrossVersions
+                        (it as? KaContractCallsInPlaceContractEffectDeclaration)?.valueParameterReference?.symbol
                     }
                 val isSuspend = namedSymbol?.isSuspend == true
                 val hasProblems = potentiallyCaptured.any { (argument, param) ->

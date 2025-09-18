@@ -5,13 +5,11 @@ import org.jetbrains.kotlin.analysis.api.KaExperimentalApi
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.components.KaDiagnosticCheckerFilter
 import org.jetbrains.kotlin.analysis.api.components.KaDiagnosticProvider
-import org.jetbrains.kotlin.analysis.api.contracts.description.KaContractParameterValue
 import org.jetbrains.kotlin.analysis.api.diagnostics.KaDiagnosticWithPsi
 import org.jetbrains.kotlin.analysis.api.resolution.KaCall
 import org.jetbrains.kotlin.analysis.api.resolution.KaCallableMemberCall
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaClassifierSymbol
-import org.jetbrains.kotlin.analysis.api.symbols.KaSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaVariableSymbol
 import org.jetbrains.kotlin.analysis.api.types.KaClassType
 import org.jetbrains.kotlin.analysis.api.types.KaFunctionType
@@ -24,8 +22,6 @@ import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
 import javax.swing.Icon
-import kotlin.reflect.KProperty1
-import kotlin.reflect.full.memberProperties
 
 @OptIn(KaExperimentalApi::class)
 fun KaDiagnosticProvider.commonDiagnosticsFor(
@@ -45,9 +41,10 @@ fun KaSession.isClassTypeFrom(
     classes: Collection<ClassId>
 ): Boolean = classes.any { type.isClassType(it) }
 
+@OptIn(KaExperimentalApi::class)
 fun KaSession.getReceivers(
     expression: KtExpression
-): List<KaType> = expression.containingKtFile.scopeContext(expression).implicitReceivers.map { it.type }
+): List<KaType> = expression.containingKtFile.scopeContext(expression).implicitValues.map { it.type }
 
 val RAISE_ID = ClassId.fromString("arrow/core/raise/Raise")
 val RAISE_ACCUMULATE_ID = ClassId.fromString("arrow/core/raise/RaiseAccumulate")
@@ -73,7 +70,7 @@ fun KaSession.isClassId(
     classId: ClassId,
     type: KaType?
 ): Boolean =
-    type != null && (type.isClassType(classId) || type.allSupertypes.any { isClassId(classId, it) })
+    type != null && (type.isClassType(classId) || type.directSupertypes.any { isClassId(classId, it) })
 
 fun KaSession.isClassId(
     classId: ClassId,
@@ -91,13 +88,15 @@ fun KaSession.hasContextWithClassId(
     symbol: KaVariableSymbol
 ): Boolean = hasContextWithClassId(classId, symbol.returnType)
 
+@OptIn(KaExperimentalApi::class)
 fun KaSession.hasContextWithClassId(
     classId: ClassId,
     call: KaCall
 ): Boolean = when (call) {
     is KaCallableMemberCall<*, *> -> {
         val pas = call.partiallyAppliedSymbol
-        isClassId(classId, pas.dispatchReceiver?.type) == true || isClassId(classId, pas.extensionReceiver?.type) == true
+        val implicitValues = listOfNotNull(pas.dispatchReceiver, pas.extensionReceiver) + pas.contextArguments
+        implicitValues.any { isClassId(classId, it.type) }
     }
     else -> false
 }
@@ -124,12 +123,6 @@ val ITERABLE_ID = ClassId.fromString("kotlin/collections/Iterable")
 fun KaSession.iterableElement(type: KaType): KaType? =
     (type.allSupertypes.firstOrNull { it.isClassType(ITERABLE_ID) } as? KaClassType)
         ?.typeArguments?.firstOrNull()?.type
-
-@OptIn(KaExperimentalApi::class) @Suppress("UNCHECKED_CAST")
-val KaContractParameterValue.symbolThatWorksAcrossVersions: KaSymbol
-    get() = (KaContractParameterValue::class.memberProperties.first {
-        it.name == "symbol" || it.name == "parameterSymbol"
-    } as KProperty1<KaContractParameterValue, KaSymbol>).get(this)
 
 val EVAL_TYPES = setOf(
     ClassId.fromString("arrow/eval/SuspendEval"),

@@ -20,7 +20,8 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2025.2.1")
+        intellijIdea("253.17525.95")
+        // intellijIdeaCommunity("2025.2.1")
         pluginVerifier()
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
@@ -28,7 +29,7 @@ dependencies {
 }
 
 object Supported {
-    const val sinceBuild = "243"
+    const val sinceBuild = "252"
     const val untilBuild = "253.*"
 }
 
@@ -39,9 +40,15 @@ intellijPlatform {
         ides {
             recommended()
             select {
-                types = listOf(IntelliJPlatformType.IntellijIdeaCommunity, IntelliJPlatformType.AndroidStudio)
-                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.BETA, ProductRelease.Channel.EAP)
+                types = listOf(IntelliJPlatformType.IntellijIdeaCommunity)
+                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.RC, ProductRelease.Channel.EAP)
                 sinceBuild = Supported.sinceBuild
+                untilBuild = "252.*"
+            }
+            select {
+                types = listOf(IntelliJPlatformType.IntellijIdea)
+                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.RC, ProductRelease.Channel.EAP)
+                sinceBuild = "253"
                 untilBuild = Supported.untilBuild
             }
         }
