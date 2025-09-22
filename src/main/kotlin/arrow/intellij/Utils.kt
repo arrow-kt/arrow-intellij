@@ -138,5 +138,6 @@ val EVAL_COMPANION_TYPES = setOf(
 
 val EVAL_CALLABLES: Map<Name, Pair<String, Icon>> = mapOf(
     Name.identifier("later") to ("Value is computed later" to AllIcons.RunConfigurations.TestPaused),
-    Name.identifier("always") to ("Value is computed every time" to AllIcons.Actions.RestartFrame)
+    Name.identifier("atMostOnce") to ("Value is computed later, but at most once" to AllIcons.RunConfigurations.TestSkipped),
+    Name.identifier("always") to ("Value is computed every time" to AllIcons.Actions.RestartFrame),
 )
