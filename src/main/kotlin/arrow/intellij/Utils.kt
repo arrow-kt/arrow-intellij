@@ -29,7 +29,11 @@ fun KaDiagnosticProvider.commonDiagnosticsFor(
 ): Collection<KaDiagnosticWithPsi<*>> = element.diagnostics(KaDiagnosticCheckerFilter.ONLY_COMMON_CHECKERS)
 
 fun KtFile.addImportIfMissing(fqName: String) {
-    if (importDirectives.any { it.importedFqName?.asString() == fqName }) return
+    val starImport = fqName.take(fqName.lastIndexOf('.'))
+    if (importDirectives.any {
+        val importedFqName = it.importedFqName?.asString()
+        importedFqName == fqName || (importedFqName == starImport && it.isAllUnder)
+    }) return
     addImport(FqName(fqName))
 }
 

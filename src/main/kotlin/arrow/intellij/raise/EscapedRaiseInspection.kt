@@ -35,10 +35,16 @@ class EscapedRaiseInspection: AbstractKotlinInspection() {
                 // start filtering out good cases
                 val symbol = call.symbol
                 val namedSymbol = symbol as? KaNamedFunctionSymbol
+                val packageName = namedSymbol?.callableId?.packageName?.asString()
+                val callableName = namedSymbol?.callableId?.callableName?.asString()
+                // - check for well-known functions
+                if (packageName != null) {
+                    // - if it is part of the contract or raise system, it's OK
+                    if (packageName == "kotlin.contracts" || packageName == "arrow.core.raise") return@visitor
+                    if (packageName == "arrow.fx.coroutines" && callableName != null && callableName.startsWith("race")) return@visitor
+                }
                 // - if the function is inline, it's OK --> should this be overtaken by callsInPlace?
                 if (namedSymbol?.isInline == true) return@visitor
-                // - if it is part of the contract system, it's OK
-                if (namedSymbol?.callableId?.packageName?.asString()?.startsWith("kotlin.contracts") == true) return@visitor
                 // - if we require the Raise context, it's OK
                 if (hasContextWithClassId(RAISE_ID, call)) return@visitor
                 // - we must have an argument which captures

@@ -5,11 +5,11 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "2.2.21"
-    id("org.jetbrains.intellij.platform") version "2.10.2"
+    id("org.jetbrains.intellij.platform") version "2.10.3"
 }
 
 group = "io.arrow-kt"
-version = "0.3.2"
+version = "0.3.3"
 
 repositories {
     mavenCentral()
@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdea("253.17525.95")
+        intellijIdea("253.27864.23") // 2025.3 EAP 7
         // intellijIdeaCommunity("2025.2.1")
         pluginVerifier()
         bundledPlugin("com.intellij.java")

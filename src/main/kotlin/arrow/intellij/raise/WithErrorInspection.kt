@@ -48,7 +48,8 @@ class WithErrorInspection: AbstractKotlinInspection() {
             }
         }
 
-    private val problematicDiagnostics = listOf("UNRESOLVED_REFERENCE", "NO_CONTEXT_ARGUMENT")
+    private val problematicContextDiagnostic = "NO_CONTEXT_ARGUMENT"
+    private val problematicDiagnostics = listOf("UNRESOLVED_REFERENCE", problematicContextDiagnostic)
 
     @OptIn(KaExperimentalApi::class)
     private fun KaSession.checkWrongReceiver(
@@ -58,14 +59,15 @@ class WithErrorInspection: AbstractKotlinInspection() {
         holder: NonDuplicateProblemsHolder
     ) {
         if (problematicDiagnostics.none { diagnostic.factoryName.startsWith(it) }) return
+        val problematicContext = diagnostic.factoryName == problematicContextDiagnostic
         val call = expr.resolveToCall() ?: return
         for (candidate in call.calls) {
             if (candidate !is KaCallableMemberCall<*, *>) continue
             val pas = candidate.partiallyAppliedSymbol
             val symbol = candidate.symbol
-            checkContext(raiseContexts, expr, pas.extensionReceiver?.type, holder)
-            checkContext(raiseContexts, expr, pas.dispatchReceiver?.type, holder)
-            checkContext(raiseContexts, expr, symbol.receiverType, holder)
+            checkContext(raiseContexts, expr, pas.extensionReceiver?.type, holder, contextArgument = problematicContext)
+            checkContext(raiseContexts, expr, pas.dispatchReceiver?.type, holder, contextArgument = problematicContext)
+            checkContext(raiseContexts, expr, symbol.receiverType, holder, contextArgument = problematicContext)
             for (contextArgument in pas.contextArguments) {
                 checkContext(raiseContexts, expr, contextArgument.type, holder, contextArgument = true)
             }
@@ -106,17 +108,16 @@ class WithErrorInspection: AbstractKotlinInspection() {
             val element = descriptor.psiElement as? KtExpression ?: return
             val factory = KtPsiFactory(project)
             val missingImport = when {
-                contextArgument -> "arrow.core.raise.context.withContext"
+                contextArgument -> "arrow.core.raise.context.withError"
                 else -> "arrow.core.raise.withError"
             }
             element.containingKtFile.addImportIfMissing(missingImport)
-            val elementToModify = when {
-                element.parent.parent is KtDotQualifiedExpression -> element.parent.parent
-                element is KtCallExpression -> element
+            val elementToModify = when (element) {
+                is KtCallExpression, is KtDotQualifiedExpression -> element
                 else -> element.parent
             } as KtExpression
             val originalOffset = elementToModify.textOffset
-            val newElementText = "withError({  }) { ${elementToModify.text} }"
+            val newElementText = "withError({ }) { ${elementToModify.text} }"
             elementToModify.replace(factory.createExpression(newElementText))
             element.findExistingEditor()?.moveCaret(originalOffset + "withError({ ".length)
         }

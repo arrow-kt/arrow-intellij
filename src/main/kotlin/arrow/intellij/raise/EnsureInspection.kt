@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.idea.intentions.negate
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
@@ -48,42 +49,49 @@ class EnsureInspection: AbstractKotlinInspection() {
                 // check that we have a 'raise' in either then or else
                 val originalCondition = expression.condition ?: return@visitor
                 val originalConditionVariables = usedVariables(originalCondition)
-                val (condition, place) = when {
-                    findArgumentToRaise(singleElseExpression, originalConditionVariables) != null -> originalCondition.negate() to WithErrorPlace.ELSE
-                    findArgumentToRaise(singleThenExpression, originalConditionVariables) != null -> originalCondition to WithErrorPlace.THEN
-                    else -> return@visitor
-                }
+                val (condition, place, isContextParameter) =
+                    when (val elseResult = findArgumentToRaise(singleElseExpression, originalConditionVariables)) {
+                        null -> when (val elseResult = findArgumentToRaise(singleThenExpression, originalConditionVariables)) {
+                            null -> return@visitor
+                            else -> Triple(originalCondition, WithErrorPlace.THEN, elseResult.second)
+                        }
+                        else -> Triple(originalCondition.negate(), WithErrorPlace.ELSE, elseResult.second)
+                    }
+
                 // we found it!
                 if (condition.findEqualsNull() == null) {
                     holder.registerProblem(
                         expression,
                         "Conditional expression may be replaced with 'ensure'",
                         ProblemHighlightType.WEAK_WARNING,
-                        ReplaceWithEnsure(place)
+                        ReplaceWithEnsure(place, isContextParameter)
                     )
                 } else {
                     holder.registerProblem(
                         expression,
                         "Conditional expression may be replaced with 'ensureNotNull'",
                         ProblemHighlightType.WEAK_WARNING,
-                        ReplaceWithEnsureNotNull(place)
+                        ReplaceWithEnsureNotNull(place, isContextParameter)
                     )
                 }
             }
         }
 
-    val RAISE_CALLABLE_ID = CallableId(ClassId.fromString("arrow/core/raise/Raise"), Name.identifier("raise"))
+    val RAISE_EXTENSION_CALLABLE_ID = CallableId(ClassId.fromString("arrow/core/raise/Raise"), Name.identifier("raise"))
+    val RAISE_CONTEXT_CALLABLE_ID = CallableId(FqName.fromSegments(listOf("arrow", "core", "raise", "context")), Name.identifier("raise"))
+    val RAISE_CALLABLE_IDS = setOf(RAISE_EXTENSION_CALLABLE_ID, RAISE_CONTEXT_CALLABLE_ID)
 
     fun KaSession.findArgumentToRaise(
         expression: KtExpression?,
         conditionVariables: Set<KaVariableSymbol>
-    ): KtExpression? {
+    ): Pair<KtExpression, Boolean>? { // returned boolean represents if context parameter
         val call = expression?.resolveToCall()?.successfulCallOrNull<KaFunctionCall<*>>() ?: return null
-        if (call.symbol.callableId != RAISE_CALLABLE_ID) return null
+        val callableId = call.symbol.callableId
+        if (callableId !in RAISE_CALLABLE_IDS) return null
         val argument = call.argumentMapping.keys.singleOrNull() ?: return null
         val smartCastedVariables = smartCastedVariables(argument)
         if (smartCastedVariables.any { it in conditionVariables }) return null
-        return argument
+        return argument to (callableId == RAISE_CONTEXT_CALLABLE_ID)
     }
 
     enum class WithErrorPlace { THEN, ELSE }
@@ -133,7 +141,7 @@ class EnsureInspection: AbstractKotlinInspection() {
         }
     }
 
-    class ReplaceWithEnsure(place: WithErrorPlace): AbstractReplaceWithEnsure(place) {
+    class ReplaceWithEnsure(place: WithErrorPlace, val isContextParameter: Boolean): AbstractReplaceWithEnsure(place) {
         override fun getName(): String = "Replace with call to 'ensure'"
 
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
@@ -142,14 +150,14 @@ class EnsureInspection: AbstractKotlinInspection() {
             execute(
                 project,
                 expression,
-                "arrow.core.raise.ensure",
+                if (isContextParameter) "arrow.core.raise.context.ensure" else "arrow.core.raise.ensure",
                 others,
                 "ensure(${condition.text}) { ${insideRaise.text} }"
             )
         }
     }
 
-    class ReplaceWithEnsureNotNull(place: WithErrorPlace): AbstractReplaceWithEnsure(place) {
+    class ReplaceWithEnsureNotNull(place: WithErrorPlace, val isContextParameter: Boolean): AbstractReplaceWithEnsure(place) {
         override fun getName(): String = "Replace with call to 'ensureNotNull'"
 
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
@@ -159,7 +167,7 @@ class EnsureInspection: AbstractKotlinInspection() {
             execute(
                 project,
                 expression,
-                "arrow.core.raise.ensureNotNull",
+                if (isContextParameter) "arrow.core.raise.context.ensureNotNull" else "arrow.core.raise.ensureNotNull",
                 others,
                 "ensureNotNull(${equalsNull.text}) { ${insideRaise.text} }"
             )
