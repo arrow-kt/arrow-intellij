@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "io.arrow-kt"
-version = "0.3.3"
+version = "0.3.4"
 
 repositories {
     mavenCentral()
@@ -20,8 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdea("253.27864.23") // 2025.3 EAP 7
-        // intellijIdeaCommunity("2025.2.1")
+        intellijIdea("2025.3.1.1")
         pluginVerifier()
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
@@ -30,7 +29,6 @@ dependencies {
 
 object Supported {
     const val sinceBuild = "252"
-    const val untilBuild = "253.*"
 }
 
 intellijPlatform {
@@ -41,15 +39,15 @@ intellijPlatform {
             recommended()
             select {
                 types = listOf(IntelliJPlatformType.IntellijIdeaCommunity)
-                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.RC, ProductRelease.Channel.EAP)
+                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.RC, ProductRelease.Channel.EAP, ProductRelease.Channel.BETA)
                 sinceBuild = Supported.sinceBuild
                 untilBuild = "252.*"
             }
             select {
                 types = listOf(IntelliJPlatformType.IntellijIdea)
-                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.RC, ProductRelease.Channel.EAP)
+                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.RC, ProductRelease.Channel.EAP, ProductRelease.Channel.BETA)
                 sinceBuild = "253"
-                untilBuild = Supported.untilBuild
+                untilBuild = provider { null }
             }
         }
     }
@@ -66,8 +64,8 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild = Supported.sinceBuild
-        untilBuild = Supported.untilBuild
+        sinceBuild.set(Supported.sinceBuild)
+        untilBuild.set(provider { null })
     }
 
     signPlugin {

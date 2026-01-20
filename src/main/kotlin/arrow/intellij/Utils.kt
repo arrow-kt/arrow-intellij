@@ -74,7 +74,7 @@ fun KaSession.isClassId(
     classId: ClassId,
     type: KaType?
 ): Boolean =
-    type != null && (type.isClassType(classId) || type.directSupertypes.any { isClassId(classId, it) })
+    type != null && (type.isClassType(classId) || type.allSupertypes.toList().any { it.isClassType(classId) })
 
 fun KaSession.isClassId(
     classId: ClassId,
