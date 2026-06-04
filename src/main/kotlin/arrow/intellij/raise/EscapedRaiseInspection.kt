@@ -49,7 +49,7 @@ class EscapedRaiseInspection: AbstractKotlinInspection() {
                 if (hasContextWithClassId(RAISE_ID, call)) return@visitor
                 // - we must have an argument which captures
                 //   and for which the parameter has no Raise, nor a callsInPlace
-                val potentiallyCaptured = (call as? KaFunctionCall<*>)?.argumentMapping ?: return@visitor
+                val potentiallyCaptured = (call as? KaFunctionCall<*>)?.combinedArgumentMapping ?: return@visitor
                 @OptIn(KaExperimentalApi::class)
                 val callsInPlaceVariables =
                     (symbol as? KaNamedFunctionSymbol)?.contractEffects.orEmpty().mapNotNull {

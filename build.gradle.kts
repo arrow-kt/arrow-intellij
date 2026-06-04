@@ -4,12 +4,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "2.3.0"
-    id("org.jetbrains.intellij.platform") version "2.11.0"
+    id("org.jetbrains.kotlin.jvm") version "2.4.0"
+    id("org.jetbrains.intellij.platform") version "2.16.0"
 }
 
 group = "io.arrow-kt"
-version = "0.3.4"
+version = "0.3.5"
 
 repositories {
     mavenCentral()
@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdea("2025.3.1.1")
+        intellijIdea("2026.1.2")
         pluginVerifier()
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
@@ -28,7 +28,7 @@ dependencies {
 }
 
 object Supported {
-    const val sinceBuild = "252"
+    const val sinceBuild = "261"
 }
 
 intellijPlatform {
@@ -38,15 +38,9 @@ intellijPlatform {
         ides {
             recommended()
             select {
-                types = listOf(IntelliJPlatformType.IntellijIdeaCommunity)
-                channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.RC, ProductRelease.Channel.EAP, ProductRelease.Channel.BETA)
-                sinceBuild = Supported.sinceBuild
-                untilBuild = "252.*"
-            }
-            select {
                 types = listOf(IntelliJPlatformType.IntellijIdea)
                 channels = listOf(ProductRelease.Channel.RELEASE, ProductRelease.Channel.RC, ProductRelease.Channel.EAP, ProductRelease.Channel.BETA)
-                sinceBuild = "253"
+                sinceBuild = Supported.sinceBuild
                 untilBuild = provider { null }
             }
         }

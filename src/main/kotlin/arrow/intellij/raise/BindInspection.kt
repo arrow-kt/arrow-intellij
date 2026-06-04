@@ -65,12 +65,11 @@ class BindInspection: AbstractKotlinInspection() {
 
         for (candidate in expr.resolveToCall()?.calls.orEmpty()) {
             if (candidate is KaFunctionCall<*>) {
-                for ((expression, parameter) in candidate.argumentMapping) {
+                for ((expression, parameter) in candidate.combinedArgumentMapping) {
                     checkArgument(expression, parameter.returnType, holder)
                 }
-                val pas = candidate.partiallyAppliedSymbol
-                pas.extensionReceiver?.let { checkArgument(it, holder) }
-                pas.dispatchReceiver?.let { checkArgument(it, holder) }
+                candidate.extensionReceiver?.let { checkArgument(it, holder) }
+                candidate.dispatchReceiver?.let { checkArgument(it, holder) }
             }
         }
     }

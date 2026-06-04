@@ -15,7 +15,7 @@ import org.jetbrains.kotlin.analysis.api.resolution.symbol
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 
 class EvalGutter: LineMarkerProviderDescriptor() {
-    override fun getName(): @GutterName String? = "Gutter icons for Eval"
+    override fun getName(): @GutterName String = "Gutter icons for Eval"
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         if (element !is KtNameReferenceExpression) return null

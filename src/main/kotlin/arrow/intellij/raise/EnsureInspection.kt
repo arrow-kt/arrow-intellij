@@ -19,8 +19,7 @@ import org.jetbrains.kotlin.analysis.api.resolution.successfulCallOrNull
 import org.jetbrains.kotlin.analysis.api.resolution.symbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaVariableSymbol
 import org.jetbrains.kotlin.idea.codeinsight.api.classic.inspections.AbstractKotlinInspection
-import org.jetbrains.kotlin.idea.intentions.branchedTransformations.isNullExpression
-import org.jetbrains.kotlin.idea.intentions.negate
+import org.jetbrains.kotlin.idea.codeinsight.utils.negate
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
@@ -34,6 +33,7 @@ import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtIfExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.ifExpressionVisitor
+import org.jetbrains.kotlin.psi.psiUtil.isNull
 
 class EnsureInspection: AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
@@ -88,7 +88,7 @@ class EnsureInspection: AbstractKotlinInspection() {
         val call = expression?.resolveToCall()?.successfulCallOrNull<KaFunctionCall<*>>() ?: return null
         val callableId = call.symbol.callableId
         if (callableId !in RAISE_CALLABLE_IDS) return null
-        val argument = call.argumentMapping.keys.singleOrNull() ?: return null
+        val argument = call.combinedArgumentMapping.keys.singleOrNull() ?: return null
         val smartCastedVariables = smartCastedVariables(argument)
         if (smartCastedVariables.any { it in conditionVariables }) return null
         return argument to (callableId == RAISE_CONTEXT_CALLABLE_ID)
@@ -178,8 +178,8 @@ class EnsureInspection: AbstractKotlinInspection() {
 fun KtExpression.findEqualsNull(): KtExpression? {
     if (this !is KtBinaryExpression) return null
     if (this.operationToken != KtTokens.EQEQ && this.operationToken != KtTokens.EQEQEQ) return null
-    if (right.isNullExpression()) return left
-    if (left.isNullExpression()) return right
+    if (right?.isNull() == true) return left
+    if (left?.isNull() == true) return right
     return null
 }
 
