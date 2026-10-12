@@ -75,6 +75,14 @@
                 level="WARNING"
                 bundle="messages.Arrow"
                 groupKey="arrow.group"
+                key="inspection.redundantEnsureNotNull"
+                implementationClass="arrow.intellij.raise.RedundantEnsureNotNullInspection"/>
+        <localInspection
+                language="kotlin"
+                enabledByDefault="true"
+                level="WARNING"
+                bundle="messages.Arrow"
+                groupKey="arrow.group"
                 key="inspection.atomicPrimitive"
                 implementationClass="arrow.intellij.wrong.AtomicPrimitiveInspection"/>
         <localInspection
