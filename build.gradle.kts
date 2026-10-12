@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "io.arrow-kt"
-version = "0.3.5"
+version = "0.3.6"
 
 repositories {
     mavenCentral()
@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdea("2026.1.2")
+        intellijIdea("2026.2.3")
         pluginVerifier()
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")

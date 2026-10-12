@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.analysis.api.resolution.symbol
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 
 class RaiseGutter: LineMarkerProviderDescriptor() {
-    override fun getName(): @GutterName String? = "Gutter icons for Raise"
+    override fun getName(): @GutterName String = "Gutter icons for Raise"
 
     val ICON = IconLoader.getIcon("/icons/predictedException.svg", this::class.java)
 

@@ -25,7 +25,7 @@ import javax.swing.Icon
 @OptIn(KaExperimentalApi::class)
 fun KaSession.commonDiagnosticsFor(
     element: KtElement
-): Collection<KaDiagnosticWithPsi<*>> = element.diagnostics(KaDiagnosticCheckerFilter.ONLY_COMMON_CHECKERS)
+): Collection<KaDiagnosticWithPsi<*>> = element.directDiagnostics(KaDiagnosticCheckerFilter.ONLY_COMMON_CHECKERS)
 
 fun KtFile.addImportIfMissing(fqName: String) {
     val starImport = fqName.take(fqName.lastIndexOf('.'))
