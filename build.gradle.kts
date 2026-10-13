@@ -28,7 +28,7 @@ dependencies {
 }
 
 object Supported {
-    const val sinceBuild = "261"
+    const val sinceBuild = "262"
 }
 
 intellijPlatform {
